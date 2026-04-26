@@ -97,6 +97,7 @@ encrypted urn. They belong to you, not the agent.
 ## Supported frameworks
 
 - **Hermes** — `~/.hermes/` layout
+- **OpenClaw** — `~/.openclaw/` layout (multi-agent: use `--agent <id>` to target one)
 
 OpenHands and others to follow.
 

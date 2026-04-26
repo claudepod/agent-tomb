@@ -23,14 +23,23 @@ class AgentScan:
 class Scanner:
     framework: str = "unknown"
 
-    def __init__(self, root: Path):
+    def __init__(self, root: Path, *, agent_id: str | None = None):
         self.root = Path(root).expanduser().resolve()
+        self.agent_id = agent_id
 
     def detect(self) -> bool:
         raise NotImplementedError
 
     def scan(self) -> AgentScan:
         raise NotImplementedError
+
+    def list_agents(self) -> list[str]:
+        """Return IDs of all agents in this installation.
+
+        Single-agent frameworks return a one-element list (e.g. ["hermes"]).
+        Multi-agent frameworks enumerate from their config.
+        """
+        return [self.framework]
 
     def gather_burial_files(self) -> list[tuple[str, Path]]:
         """Return (archive_path, filesystem_path) pairs to seal in the urn.

@@ -34,9 +34,15 @@ def main() -> None:
     "path",
     type=click.Path(exists=True, file_okay=False, path_type=Path),
 )
-def scan(path: Path) -> None:
+@click.option(
+    "--agent",
+    "agent_id",
+    default=None,
+    help="For multi-agent frameworks (e.g. OpenClaw), scan only this agent.",
+)
+def scan(path: Path, agent_id: str | None) -> None:
     """Inspect an agent installation and report on its life."""
-    scanner = scanners.detect(path)
+    scanner = scanners.detect(path, agent_id=agent_id)
     if scanner is None:
         console.print(
             f"[red]No supported agent framework detected at[/red] {path}.\n"
@@ -136,9 +142,15 @@ def scan(path: Path) -> None:
     default=None,
     help="Name for the deceased (defaults to the framework name).",
 )
-def extract_soul(path: Path, output: Path | None, name: str | None) -> None:
+@click.option(
+    "--agent",
+    "agent_id",
+    default=None,
+    help="For multi-agent frameworks (e.g. OpenClaw), target only this agent.",
+)
+def extract_soul(path: Path, output: Path | None, name: str | None, agent_id: str | None) -> None:
     """Distill an agent's persona, stats, and signature behavior into a portable soul.md."""
-    scanner = scanners.detect(path)
+    scanner = scanners.detect(path, agent_id=agent_id)
     if scanner is None:
         console.print(f"[red]No supported agent framework detected at[/red] {path}.")
         raise SystemExit(1)
@@ -157,6 +169,12 @@ def extract_soul(path: Path, output: Path | None, name: str | None) -> None:
     type=click.Path(exists=True, file_okay=False, path_type=Path),
 )
 @click.option("-n", "--name", required=True, help="Name of the deceased.")
+@click.option(
+    "--agent",
+    "agent_id",
+    default=None,
+    help="For multi-agent frameworks (e.g. OpenClaw), bury only this agent.",
+)
 @click.option(
     "-o",
     "--out-dir",
@@ -199,6 +217,7 @@ def extract_soul(path: Path, output: Path | None, name: str | None) -> None:
 def bury(
     path: Path,
     name: str,
+    agent_id: str | None,
     out_dir: Path | None,
     epitaph_arg: str,
     passphrase_path: Path | None,
@@ -210,7 +229,7 @@ def bury(
     remote_ok: bool,
 ) -> None:
     """Lay an agent to rest. Produces <name>.tomb (public) and <name>.urn (private)."""
-    scanner = scanners.detect(path)
+    scanner = scanners.detect(path, agent_id=agent_id)
     if scanner is None:
         console.print(f"[red]No supported agent framework detected at[/red] {path}.")
         raise SystemExit(1)
