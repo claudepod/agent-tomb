@@ -1,0 +1,8 @@
+{
+  "name": "vimala-agent",
+  "framework": "hermes",
+  "kind": "tomb",
+  "created_at": "2026-04-26T05:56:58.310409+00:00",
+  "agent_tomb_version": "0.1.0",
+  "soul_sha256": "0814c4615aad4340f8e287c5daeab5a2b073b564175a995f62e03995187247f7"
+}
