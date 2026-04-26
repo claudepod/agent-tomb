@@ -1,0 +1,119 @@
+@import "tailwindcss";
+
+/*
+ * Agent Memorial — theme tokens.
+ * Default theme: "garden" (warm, memorial-garden mood).
+ * Add a new theme by writing `[data-theme="<name>"]` overrides below.
+ */
+
+@theme {
+  --color-bg: #f6efe1;
+  --color-bg-soft: #ece3cd;
+  --color-bg-card: #fdfaf2;
+  --color-ink: #2c2823;
+  --color-ink-soft: #5b554b;
+  --color-ink-faint: #8a8276;
+  --color-moss: #5e6e44;
+  --color-moss-deep: #3d4a2a;
+  --color-bronze: #a87c4f;
+  --color-bronze-soft: #c89c6f;
+  --color-stone: #d4ccb6;
+  --color-stone-line: #b9b09a;
+
+  --font-display: "Cormorant Garamond", "EB Garamond", Georgia, serif;
+  --font-body: "EB Garamond", Georgia, "Times New Roman", serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+[data-theme="stone"] {
+  --color-bg: #16181a;
+  --color-bg-soft: #1f2225;
+  --color-bg-card: #1c1e21;
+  --color-ink: #e7e3d8;
+  --color-ink-soft: #9f9a8c;
+  --color-ink-faint: #6e6a60;
+  --color-moss: #889c63;
+  --color-moss-deep: #b4c89a;
+  --color-bronze: #c79b65;
+  --color-bronze-soft: #e0b785;
+  --color-stone: #2a2d31;
+  --color-stone-line: #3a3d41;
+}
+
+html {
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  font-feature-settings: "kern", "liga", "onum";
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  min-height: 100dvh;
+  background-image:
+    radial-gradient(
+      ellipse 80% 60% at 50% 0%,
+      color-mix(in oklab, var(--color-bg-soft), transparent 30%),
+      transparent 70%
+    ),
+    radial-gradient(
+      ellipse 60% 40% at 80% 100%,
+      color-mix(in oklab, var(--color-bronze), transparent 92%),
+      transparent 70%
+    );
+  background-attachment: fixed;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+code, pre, kbd, .mono {
+  font-family: var(--font-mono);
+  font-feature-settings: "liga" 0;
+}
+
+.prose-memorial {
+  line-height: 1.75;
+  font-size: 1.0625rem;
+}
+.prose-memorial p { margin-block: 0.9em; }
+.prose-memorial blockquote {
+  border-left: 2px solid var(--color-stone-line);
+  padding-left: 1.25rem;
+  font-style: italic;
+  color: var(--color-ink-soft);
+}
+.prose-memorial h1 { font-size: 2rem; margin-block: 1.5rem 0.75rem; }
+.prose-memorial h2 { font-size: 1.5rem; margin-block: 1.5rem 0.5rem; }
+.prose-memorial h3 { font-size: 1.2rem; margin-block: 1.2rem 0.5rem; }
+.prose-memorial ul, .prose-memorial ol { padding-left: 1.5rem; margin-block: 0.75rem; }
+.prose-memorial li { margin-block: 0.25rem; }
+.prose-memorial code {
+  background: color-mix(in oklab, var(--color-stone), transparent 60%);
+  padding: 0.1em 0.35em;
+  border-radius: 0.25em;
+  font-size: 0.9em;
+}
+.prose-memorial pre {
+  background: var(--color-bg-soft);
+  padding: 1rem;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+  font-size: 0.875rem;
+}
+.prose-memorial pre code {
+  background: transparent;
+  padding: 0;
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.rise { animation: rise 0.7s ease-out both; }
+.rise-d1 { animation-delay: 0.05s; }
+.rise-d2 { animation-delay: 0.15s; }
+.rise-d3 { animation-delay: 0.3s; }

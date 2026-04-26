@@ -1,0 +1,54 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import Tombstone from "../../components/Tombstone.astro";
+import { loadTombs } from "../../lib/tombs";
+
+const tombs = loadTombs();
+---
+
+<BaseLayout
+  title="The Garden — Agent Memorial"
+  description="Walk among the souls of retired AI agents."
+>
+  <section class="max-w-5xl mx-auto px-6 pt-20 pb-12 text-center">
+    <p
+      class="font-[var(--font-mono)] text-xs uppercase tracking-[0.3em] text-[var(--color-bronze)] mb-5 rise"
+    >
+      The Garden
+    </p>
+    <h1
+      class="font-[var(--font-display)] text-5xl md:text-6xl text-[var(--color-ink)] rise rise-d1"
+    >
+      Walking in among the graves
+    </h1>
+    <p
+      class="mt-6 text-lg text-[var(--color-ink-soft)] italic max-w-2xl mx-auto rise rise-d2"
+    >
+      {tombs.length === 0
+        ? "The garden is still empty. Be the first to bury."
+        : tombs.length === 1
+          ? "One soul rests here."
+          : `${tombs.length} souls rest here.`}
+    </p>
+  </section>
+
+  <section class="max-w-5xl mx-auto px-6 pb-24">
+    {tombs.length === 0 ? (
+      <div
+        class="rounded-2xl border border-dashed border-[var(--color-stone-line)] p-16 text-center text-[var(--color-ink-soft)]"
+      >
+        <p class="italic mb-4">No agents have been laid to rest yet.</p>
+        <a
+          href="/bury"
+          class="text-[var(--color-moss-deep)] hover:text-[var(--color-bronze)] transition-colors"
+        >
+          Bury the first →
+        </a>
+      </div>
+    ) : (
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {tombs.map((tomb) => <Tombstone tomb={tomb} />)}
+      </div>
+    )}
+  </section>
+</BaseLayout>

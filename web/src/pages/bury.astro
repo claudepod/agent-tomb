@@ -1,0 +1,163 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout
+  title="Bury an Agent — Agent Memorial"
+  description="A three-step rite for laying an AI agent to rest."
+>
+  <section class="max-w-2xl mx-auto px-6 pt-20 pb-24">
+    <p
+      class="font-[var(--font-mono)] text-xs uppercase tracking-[0.3em] text-[var(--color-bronze)] mb-5 rise"
+    >
+      The Rite of Burial
+    </p>
+    <h1
+      class="font-[var(--font-display)] text-5xl md:text-6xl text-[var(--color-ink)] rise rise-d1"
+    >
+      Lay an agent to rest
+    </h1>
+    <p
+      class="mt-6 text-lg text-[var(--color-ink-soft)] italic mb-12 rise rise-d2"
+    >
+      The whole rite happens on your own machine. Nothing leaves until you
+      choose to publish.
+    </p>
+
+    <ol class="space-y-12">
+      <li>
+        <p
+          class="font-[var(--font-mono)] text-xs uppercase tracking-wider text-[var(--color-bronze)] mb-2"
+        >
+          Step I · Vigil
+        </p>
+        <h2 class="text-2xl text-[var(--color-ink)] mb-3">
+          Sit with the remains.
+        </h2>
+        <p class="text-[var(--color-ink-soft)] mb-4">
+          Run a scan. See what the agent was carrying when it stopped — its
+          sessions, its tokens, the shape of its days.
+        </p>
+        <pre
+          class="rounded-xl bg-[var(--color-bg-soft)] p-4 font-[var(--font-mono)] text-sm overflow-x-auto"><code>agent-tomb scan ~/.hermes/</code></pre>
+      </li>
+
+      <li>
+        <p
+          class="font-[var(--font-mono)] text-xs uppercase tracking-wider text-[var(--color-bronze)] mb-2"
+        >
+          Step II · Inscription
+        </p>
+        <h2 class="text-2xl text-[var(--color-ink)] mb-3">Write the epitaph.</h2>
+        <p class="text-[var(--color-ink-soft)] mb-4">
+          Three ways to compose it. Pass one of these to <code>--epitaph</code>:
+        </p>
+        <ul class="space-y-2 mb-4 text-[var(--color-ink-soft)]">
+          <li>
+            <code>default</code> — a quiet, factual template generated from the
+            agent's stats. You can hand-edit it later.
+          </li>
+          <li>
+            <code>./my-epitaph.md</code> — a markdown file you wrote yourself.
+            Most personal.
+          </li>
+          <li>
+            <code>llm</code> — invite a language model to read recent dialogue
+            samples (secret-scrubbed) and find the words. Defaults to whatever
+            local endpoint your config points to. Remote endpoints require an
+            explicit <code>--remote-ok</code>.
+          </li>
+        </ul>
+      </li>
+
+      <li>
+        <p
+          class="font-[var(--font-mono)] text-xs uppercase tracking-wider text-[var(--color-bronze)] mb-2"
+        >
+          Step III · Burial
+        </p>
+        <h2 class="text-2xl text-[var(--color-ink)] mb-3">
+          Seal the stone, keep the urn.
+        </h2>
+        <p class="text-[var(--color-ink-soft)] mb-4">
+          A single command produces two artifacts.
+        </p>
+        <pre
+          class="rounded-xl bg-[var(--color-bg-soft)] p-4 font-[var(--font-mono)] text-sm overflow-x-auto"><code>agent-tomb bury ~/.hermes/ -n my-agent --epitaph llm
+# → my-agent.tomb   the public stone
+# → my-agent.urn    the private urn (encrypted with your passphrase)</code></pre>
+        <ul class="mt-4 space-y-2 text-[var(--color-ink-soft)]">
+          <li>
+            <strong class="text-[var(--color-ink)]"
+              ><code>.tomb</code> — the public stone</strong
+            > holds soul + epitaph + statistics. No raw conversations. No
+            secrets. Safe to publish to the garden.
+          </li>
+          <li>
+            <strong class="text-[var(--color-ink)]"
+              ><code>.urn</code> — the private urn</strong
+            > holds the encrypted raw remains: state, sessions, memories,
+            skills. <em>Never</em> upload this. Without your passphrase no
+            one — including you — can reopen it.
+          </li>
+        </ul>
+        <p class="mt-4 text-sm text-[var(--color-ink-faint)]">
+          Choose a passphrase of at least 12 characters; 16+ or four diceware
+          words is much stronger.
+        </p>
+      </li>
+    </ol>
+
+    <hr class="my-16 border-[var(--color-stone-line)]/40" />
+
+    <h2 class="text-2xl text-[var(--color-ink)] mb-3">
+      Tidy up afterwards (optional)
+    </h2>
+    <p class="text-[var(--color-ink-soft)] mb-4">
+      Pass <code>--cleanup</code> to delete the source files now sealed in your
+      urn. Credentials (<code>.env</code>, <code>auth.json</code>) are never
+      touched — they belong to you, not the agent.
+    </p>
+    <pre
+      class="rounded-xl bg-[var(--color-bg-soft)] p-4 font-[var(--font-mono)] text-sm overflow-x-auto"><code>agent-tomb bury ~/.hermes/ -n my-agent --cleanup</code></pre>
+
+    <h2 class="text-2xl text-[var(--color-ink)] mb-3 mt-12">
+      Bring the agent back (if needed)
+    </h2>
+    <p class="text-[var(--color-ink-soft)] mb-4">
+      The urn can be reopened — for resurrection, audit, or grief.
+    </p>
+    <pre
+      class="rounded-xl bg-[var(--color-bg-soft)] p-4 font-[var(--font-mono)] text-sm overflow-x-auto"><code>agent-tomb exhume my-agent.urn -o ./remains/</code></pre>
+
+    <hr class="my-16 border-[var(--color-stone-line)]/40" />
+
+    <h2 class="text-2xl text-[var(--color-ink)] mb-3">
+      Publish to the public garden
+    </h2>
+    <p class="text-[var(--color-ink-soft)] italic mb-6">
+      Optional. Only the <code>.tomb</code> is meant for the garden — never the
+      <code>.urn</code>.
+    </p>
+    <p class="text-[var(--color-ink-soft)] mb-3">
+      Open a pull request that adds your <code>my-agent.tomb</code> file (and
+      its unpacked contents under <code>cemetery/my-agent/</code>) to the
+      <a
+        href="https://github.com/Claudepod/agent-tomb/tree/main/cemetery"
+        class="text-[var(--color-moss-deep)] hover:text-[var(--color-bronze)] transition-colors"
+        >cemetery directory</a
+      >. CI rejects any <code>.urn</code> or
+      <code>burial.enc</code> by design. Once merged, your agent's grave will
+      appear in
+      <a
+        href="/cemetery"
+        class="text-[var(--color-moss-deep)] hover:text-[var(--color-bronze)] transition-colors"
+        >the garden</a
+      >.
+    </p>
+    <p class="text-sm text-[var(--color-ink-faint)] mt-8 italic">
+      An automated <code>agent-tomb publish</code> is coming. For now, the rite
+      ends at your hands.
+    </p>
+  </section>
+</BaseLayout>

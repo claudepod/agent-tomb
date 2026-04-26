@@ -1,0 +1,94 @@
+{
+  "summary": {
+    "db_size_bytes": 675840,
+    "session_count": 3,
+    "first_at": "2026-04-25T08:20:18.007185+00:00",
+    "last_at": "2026-04-25T10:19:13.843019+00:00",
+    "lifespan_days": 0.08,
+    "input_tokens": 4323399,
+    "output_tokens": 21749,
+    "cache_read_tokens": 345408,
+    "cache_write_tokens": 0,
+    "estimated_cost_usd": 0.2611,
+    "message_count": 277,
+    "models": [
+      "huihui-ai_qwen3-coder-next-abliterated",
+      "kimi-k2.6"
+    ],
+    "platforms": [
+      "discord"
+    ],
+    "top_tools": [
+      [
+        "terminal",
+        71
+      ],
+      [
+        "read_file",
+        14
+      ],
+      [
+        "patch",
+        7
+      ],
+      [
+        "send_message",
+        7
+      ],
+      [
+        "write_file",
+        5
+      ],
+      [
+        "search_files",
+        2
+      ],
+      [
+        "session_search",
+        2
+      ],
+      [
+        "clarify",
+        2
+      ],
+      [
+        "run",
+        1
+      ],
+      [
+        "execute_code",
+        1
+      ]
+    ]
+  },
+  "skills": [
+    "apple",
+    "autonomous-ai-agents",
+    "creative",
+    "data-science",
+    "devops",
+    "diagramming",
+    "dogfood",
+    "domain",
+    "email",
+    "feeds",
+    "gaming",
+    "gifs",
+    "github",
+    "inference-sh",
+    "mcp",
+    "media",
+    "mlops",
+    "note-taking",
+    "productivity",
+    "red-teaming",
+    "research",
+    "smart-home",
+    "social-media",
+    "software-development"
+  ],
+  "notes": [
+    "9 session JSON dump(s) on disk (sessions/ \u2014 separate from state.db)",
+    "memories/ has 0 entries (empty)"
+  ]
+}

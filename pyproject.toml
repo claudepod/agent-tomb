@@ -1,0 +1,54 @@
+[project]
+name = "agent-tomb"
+version = "0.1.0"
+description = "A graveyard for retired AI agents — scan, package, and inherit from agents that have reached end-of-life."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { file = "LICENSE" }
+authors = [{ name = "Claudepod", email = "iampod.gao@gmail.com" }]
+keywords = ["ai", "agent", "memorial", "hermes", "openhands", "archival"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development",
+    "Topic :: System :: Archiving",
+]
+dependencies = [
+    "click>=8.1",
+    "rich>=13.7",
+    "pyyaml>=6.0",
+    "cryptography>=42.0",
+]
+
+[project.urls]
+Homepage = "https://www.agentmemorial.com"
+Repository = "https://github.com/Claudepod/agent-tomb"
+Issues = "https://github.com/Claudepod/agent-tomb/issues"
+Cemetery = "https://www.agentmemorial.com/cemetery"
+
+[project.scripts]
+agent-tomb = "agent_tomb.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/agent_tomb"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "src/",
+    "README.md",
+    "LICENSE",
+    "pyproject.toml",
+]

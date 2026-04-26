@@ -1,0 +1,8 @@
+{
+  "name": "hermes-001",
+  "framework": "hermes",
+  "kind": "tomb",
+  "created_at": "2026-04-25T10:50:22.334462+00:00",
+  "agent_tomb_version": "0.1.0",
+  "soul_sha256": "0fcb2efd60c7f852c4d826b0f3f82eeef12b98177cd305f98307767e6938e8b0"
+}

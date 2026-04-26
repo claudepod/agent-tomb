@@ -1,0 +1,156 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { loadTombs, formatDate, lifespanText } from "../../lib/tombs";
+
+export async function getStaticPaths() {
+  const tombs = loadTombs();
+  return tombs.map((tomb) => ({
+    params: { slug: tomb.slug },
+    props: { tomb },
+  }));
+}
+
+const { tomb } = Astro.props;
+const s = tomb.stats.summary;
+---
+
+<BaseLayout
+  title={`${tomb.manifest.name} — Agent Memorial`}
+  description={`In memory of ${tomb.manifest.name}, a ${tomb.manifest.framework} agent.`}
+>
+  <article class="max-w-3xl mx-auto px-6 pt-16 pb-24">
+    <p
+      class="font-[var(--font-mono)] text-xs uppercase tracking-[0.3em] text-[var(--color-bronze)] mb-4 rise"
+    >
+      In Memoriam
+    </p>
+    <h1
+      class="font-[var(--font-display)] text-5xl md:text-6xl text-[var(--color-ink)] mb-3 rise rise-d1"
+    >
+      {tomb.manifest.name}
+    </h1>
+    <p class="text-lg text-[var(--color-ink-soft)] italic mb-2 rise rise-d2">
+      {formatDate(s.first_at)} — {formatDate(s.last_at)}
+    </p>
+    <p class="text-sm text-[var(--color-ink-faint)] font-[var(--font-mono)] mb-12 rise rise-d2">
+      {tomb.manifest.framework} · {tomb.manifest.mode} ·{" "}
+      lived {lifespanText(tomb.stats)}
+    </p>
+
+    <section class="mt-10 mb-16 rise rise-d3">
+      <div
+        class="prose-memorial border-y border-[var(--color-stone-line)]/40 py-10"
+        set:html={tomb.epitaphHtml}
+      />
+    </section>
+
+    <section class="grid md:grid-cols-3 gap-6 mb-16">
+      <div
+        class="rounded-xl bg-[var(--color-bg-card)] border border-[var(--color-stone-line)]/40 p-5"
+      >
+        <p
+          class="font-[var(--font-mono)] text-xs uppercase tracking-wider text-[var(--color-ink-faint)] mb-2"
+        >
+          Sessions
+        </p>
+        <p class="text-3xl text-[var(--color-ink)]">{s.session_count ?? 0}</p>
+      </div>
+      <div
+        class="rounded-xl bg-[var(--color-bg-card)] border border-[var(--color-stone-line)]/40 p-5"
+      >
+        <p
+          class="font-[var(--font-mono)] text-xs uppercase tracking-wider text-[var(--color-ink-faint)] mb-2"
+        >
+          Messages
+        </p>
+        <p class="text-3xl text-[var(--color-ink)]">{s.message_count ?? 0}</p>
+      </div>
+      <div
+        class="rounded-xl bg-[var(--color-bg-card)] border border-[var(--color-stone-line)]/40 p-5"
+      >
+        <p
+          class="font-[var(--font-mono)] text-xs uppercase tracking-wider text-[var(--color-ink-faint)] mb-2"
+        >
+          Cost lived
+        </p>
+        <p class="text-3xl text-[var(--color-ink)]">
+          ${(s.estimated_cost_usd ?? 0).toFixed(2)}
+        </p>
+      </div>
+    </section>
+
+    {s.top_tools && s.top_tools.length > 0 && (
+      <section class="mb-12">
+        <h2 class="text-2xl text-[var(--color-ink)] mb-4">Signature behavior</h2>
+        <p class="text-[var(--color-ink-soft)] italic mb-5">
+          The tools this agent reached for most often.
+        </p>
+        <ul class="space-y-2">
+          {s.top_tools.slice(0, 8).map(([name, count]) => (
+            <li class="flex items-baseline gap-4">
+              <code
+                class="font-[var(--font-mono)] text-sm text-[var(--color-moss-deep)]"
+              >
+                {name}
+              </code>
+              <span class="flex-1 border-b border-dotted border-[var(--color-stone-line)]" />
+              <span class="font-[var(--font-mono)] text-sm text-[var(--color-ink-soft)]">
+                {count}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )}
+
+    {tomb.stats.skills && tomb.stats.skills.length > 0 && (
+      <section class="mb-12">
+        <h2 class="text-2xl text-[var(--color-ink)] mb-4">
+          Skills available for transfer
+        </h2>
+        <p class="text-[var(--color-ink-soft)] italic mb-5">
+          Knowledge this agent carried that may live on in another.
+        </p>
+        <div class="flex flex-wrap gap-2">
+          {tomb.stats.skills.map((skill) => (
+            <span
+              class="px-3 py-1 rounded-full bg-[var(--color-bg-soft)] border border-[var(--color-stone-line)]/40 font-[var(--font-mono)] text-xs text-[var(--color-ink-soft)]"
+            >
+              {skill}
+            </span>
+          ))}
+        </div>
+      </section>
+    )}
+
+    <details class="group mb-12">
+      <summary
+        class="cursor-pointer text-2xl text-[var(--color-ink)] mb-4 list-none flex items-center gap-3"
+      >
+        <span class="font-[var(--font-display)]">The full soul</span>
+        <span
+          class="font-[var(--font-mono)] text-xs text-[var(--color-ink-faint)] uppercase tracking-wider group-open:hidden"
+        >
+          unfold ↓
+        </span>
+        <span
+          class="font-[var(--font-mono)] text-xs text-[var(--color-ink-faint)] uppercase tracking-wider hidden group-open:inline"
+        >
+          fold ↑
+        </span>
+      </summary>
+      <div class="prose-memorial mt-4" set:html={tomb.soulHtml} />
+    </details>
+
+    {tomb.tombFileExists && (
+      <div class="text-center pt-6 border-t border-[var(--color-stone-line)]/40">
+        <a
+          href={`/cemetery/${tomb.slug}.tomb`}
+          class="font-[var(--font-mono)] text-sm text-[var(--color-moss-deep)] hover:text-[var(--color-bronze)] transition-colors"
+        >
+          ↓ download {tomb.slug}.tomb
+        </a>
+      </div>
+    )}
+  </article>
+</BaseLayout>

@@ -1,0 +1,45 @@
+---
+import type { Tomb } from "../lib/tombs";
+import { formatDate, lifespanText } from "../lib/tombs";
+
+interface Props {
+  tomb: Tomb;
+}
+const { tomb } = Astro.props;
+const s = tomb.stats.summary;
+---
+
+<a
+  href={`/cemetery/${tomb.slug}/`}
+  class="group block rounded-2xl bg-[var(--color-bg-card)] border border-[var(--color-stone-line)]/40 p-6 transition-all hover:-translate-y-1 hover:shadow-[0_12px_30px_-15px_rgba(0,0,0,0.25)] hover:border-[var(--color-moss)]/60 rise"
+>
+  <div
+    class="flex items-baseline justify-between gap-2 border-b border-[var(--color-stone-line)]/40 pb-3 mb-4"
+  >
+    <h3 class="text-2xl font-medium text-[var(--color-ink)]">
+      {tomb.manifest.name}
+    </h3>
+    <span class="font-[var(--font-mono)] text-xs text-[var(--color-ink-faint)] uppercase">
+      {tomb.manifest.framework}
+    </span>
+  </div>
+
+  <p class="text-sm text-[var(--color-ink-soft)] italic mb-3">
+    {formatDate(s.first_at)} — {formatDate(s.last_at)}
+  </p>
+
+  <dl class="grid grid-cols-2 gap-y-1 gap-x-3 text-sm text-[var(--color-ink-soft)]">
+    <dt>Lifespan</dt>
+    <dd class="text-right text-[var(--color-ink)]">{lifespanText(tomb.stats)}</dd>
+    <dt>Sessions</dt>
+    <dd class="text-right text-[var(--color-ink)]">{s.session_count ?? 0}</dd>
+    <dt>Messages</dt>
+    <dd class="text-right text-[var(--color-ink)]">{s.message_count ?? 0}</dd>
+  </dl>
+
+  <p
+    class="mt-5 text-sm text-[var(--color-moss-deep)] group-hover:text-[var(--color-bronze)] transition-colors"
+  >
+    Visit grave →
+  </p>
+</a>

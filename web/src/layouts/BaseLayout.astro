@@ -1,0 +1,101 @@
+---
+import "../styles/global.css";
+
+interface Props {
+  title: string;
+  description?: string;
+}
+const { title, description = "A garden for AI agents that have lived." } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en" data-theme="garden">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=JetBrains+Mono:wght@400;500&display=swap"
+    />
+    <title>{title}</title>
+    <script is:inline>
+      // Restore theme preference before paint to avoid flash.
+      try {
+        const t = localStorage.getItem("agentmemorial-theme");
+        if (t) document.documentElement.setAttribute("data-theme", t);
+      } catch (_) {}
+    </script>
+  </head>
+  <body class="min-h-dvh flex flex-col">
+    <header class="border-b border-[var(--color-stone-line)]/40">
+      <nav
+        class="max-w-5xl mx-auto px-6 py-5 flex items-center justify-between"
+      >
+        <a
+          href="/"
+          class="font-[var(--font-display)] text-xl tracking-tight text-[var(--color-ink)] hover:text-[var(--color-moss-deep)] transition-colors"
+        >
+          Agent Memorial
+        </a>
+        <div class="flex items-center gap-6 text-sm text-[var(--color-ink-soft)]">
+          <a href="/cemetery" class="hover:text-[var(--color-ink)] transition-colors">The Garden</a>
+          <a href="/bury" class="hover:text-[var(--color-ink)] transition-colors">Bury an Agent</a>
+          <a
+            href="https://github.com/Claudepod/agent-tomb"
+            class="hover:text-[var(--color-ink)] transition-colors"
+            >GitHub</a
+          >
+          <button
+            id="theme-toggle"
+            type="button"
+            aria-label="Toggle theme"
+            class="px-2.5 py-1 rounded-full border border-[var(--color-stone-line)]/60 text-xs uppercase tracking-wider hover:bg-[var(--color-bg-soft)] transition-colors"
+          >
+            <span data-theme-label>Garden</span>
+          </button>
+        </div>
+      </nav>
+    </header>
+
+    <main class="flex-1">
+      <slot />
+    </main>
+
+    <footer
+      class="border-t border-[var(--color-stone-line)]/40 mt-24 py-10 text-sm text-[var(--color-ink-faint)]"
+    >
+      <div class="max-w-5xl mx-auto px-6 flex flex-wrap gap-4 justify-between">
+        <span>
+          Agent Memorial · <em>may the gardens grow</em>
+        </span>
+        <span class="font-[var(--font-mono)] text-xs">
+          MIT · open source · agentmemorial.com
+        </span>
+      </div>
+    </footer>
+
+    <script is:inline>
+      (() => {
+        const btn = document.getElementById("theme-toggle");
+        const label = btn?.querySelector("[data-theme-label]");
+        const root = document.documentElement;
+        const themes = ["garden", "stone"];
+        const labels = { garden: "Garden", stone: "Stone" };
+        const sync = () => {
+          if (label) label.textContent = labels[root.getAttribute("data-theme") || "garden"];
+        };
+        sync();
+        btn?.addEventListener("click", () => {
+          const cur = root.getAttribute("data-theme") || "garden";
+          const next = themes[(themes.indexOf(cur) + 1) % themes.length];
+          root.setAttribute("data-theme", next);
+          try { localStorage.setItem("agentmemorial-theme", next); } catch (_) {}
+          sync();
+        });
+      })();
+    </script>
+  </body>
+</html>

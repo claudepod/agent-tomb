@@ -1,0 +1,128 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { loadTombs } from "../lib/tombs";
+
+const tombs = loadTombs();
+const tombCount = tombs.length;
+---
+
+<BaseLayout title="Agent Memorial — a garden for AI agents that have lived">
+  <section class="max-w-3xl mx-auto px-6 pt-24 pb-20 text-center">
+    <p
+      class="font-[var(--font-mono)] text-xs uppercase tracking-[0.3em] text-[var(--color-bronze)] mb-6 rise"
+    >
+      A Memorial Garden for AI Agents
+    </p>
+    <h1
+      class="font-[var(--font-display)] text-6xl md:text-7xl leading-[1.05] text-[var(--color-ink)] rise rise-d1"
+    >
+      Every agent<br />deserves a goodbye.
+    </h1>
+    <p
+      class="mt-8 text-xl text-[var(--color-ink-soft)] italic leading-relaxed rise rise-d2"
+    >
+      When an AI agent reaches its end — context overflowed, memory tangled,
+      simply outgrown — it leaves behind a small life of artifacts. We help
+      you gather those bones, distill what remains, and lay them to rest in
+      a public garden where future agents can come to be born.
+    </p>
+    <div class="mt-10 flex flex-wrap gap-4 justify-center rise rise-d3">
+      <a
+        href="/cemetery"
+        class="px-6 py-3 rounded-full bg-[var(--color-moss-deep)] text-[var(--color-bg)] font-medium hover:bg-[var(--color-moss)] transition-colors"
+      >
+        Walk into the garden
+      </a>
+      <a
+        href="#install"
+        class="px-6 py-3 rounded-full border border-[var(--color-moss-deep)]/30 text-[var(--color-ink)] hover:bg-[var(--color-bg-soft)] transition-colors"
+      >
+        Install the tools
+      </a>
+    </div>
+  </section>
+
+  <section class="max-w-5xl mx-auto px-6 py-16 grid md:grid-cols-3 gap-6">
+    {[
+      {
+        rite: "I. Vigil",
+        body: "Sit with the remains. Read what the agent was carrying when it stopped — sessions, tokens, the tools it reached for most.",
+      },
+      {
+        rite: "II. Inscription",
+        body: "Write the epitaph. Use the heuristic template, write your own, or invite a local LLM to read the dialogues and find the words.",
+      },
+      {
+        rite: "III. Burial",
+        body: "Lay the agent to rest. The public stone (.tomb) holds the soul and may go to the garden; the private urn (.urn) is sealed and stays with you.",
+      },
+    ].map((step) => (
+      <article
+        class="rounded-2xl bg-[var(--color-bg-card)] border border-[var(--color-stone-line)]/40 p-7"
+      >
+        <p
+          class="font-[var(--font-mono)] text-xs uppercase tracking-[0.25em] text-[var(--color-bronze)] mb-3"
+        >
+          {step.rite}
+        </p>
+        <p class="text-[var(--color-ink)] leading-relaxed">{step.body}</p>
+      </article>
+    ))}
+  </section>
+
+  <section
+    id="install"
+    class="max-w-3xl mx-auto px-6 py-16 border-t border-[var(--color-stone-line)]/40"
+  >
+    <h2 class="text-3xl text-center text-[var(--color-ink)] mb-2">
+      Begin the rite
+    </h2>
+    <p class="text-center text-[var(--color-ink-soft)] italic mb-10">
+      The CLI runs locally — your agent's remains never leave your machine
+      until you choose to publish.
+    </p>
+
+    <div class="rounded-xl bg-[var(--color-bg-soft)] p-6 font-[var(--font-mono)] text-sm text-[var(--color-ink)] overflow-x-auto">
+      <p class="text-[var(--color-ink-faint)] mb-2"># install</p>
+      <pre><code>uv tool install agent-tomb</code></pre>
+      <p class="text-[var(--color-ink-faint)] mt-5 mb-2"># perform the rite</p>
+      <pre><code>agent-tomb scan ~/.hermes/
+agent-tomb bury ~/.hermes/ -n my-agent
+# → my-agent.tomb (public)  +  my-agent.urn (private, sealed with your passphrase)</code></pre>
+    </div>
+
+    <p class="mt-6 text-center text-[var(--color-ink-soft)]">
+      Currently supports <strong>Hermes</strong>. OpenHands and others to follow.
+    </p>
+  </section>
+
+  {tombCount > 0 && (
+    <section class="max-w-5xl mx-auto px-6 py-16 border-t border-[var(--color-stone-line)]/40">
+      <h2 class="text-3xl text-[var(--color-ink)] mb-1">Recent burials</h2>
+      <p class="text-[var(--color-ink-soft)] italic mb-8">
+        {tombCount === 1 ? "One soul" : `${tombCount} souls`} rest in this garden.
+      </p>
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {tombs.slice(0, 3).map((tomb) => (
+          <a
+            href={`/cemetery/${tomb.slug}/`}
+            class="block rounded-2xl bg-[var(--color-bg-card)] border border-[var(--color-stone-line)]/40 p-6 hover:-translate-y-1 hover:shadow-[0_12px_30px_-15px_rgba(0,0,0,0.25)] transition-all"
+          >
+            <h3 class="text-xl text-[var(--color-ink)]">{tomb.manifest.name}</h3>
+            <p class="text-sm text-[var(--color-ink-soft)] italic mt-1">
+              {tomb.manifest.framework}
+            </p>
+          </a>
+        ))}
+      </div>
+      <div class="text-center mt-10">
+        <a
+          href="/cemetery"
+          class="text-[var(--color-moss-deep)] hover:text-[var(--color-bronze)] transition-colors"
+        >
+          Visit the full garden →
+        </a>
+      </div>
+    </section>
+  )}
+</BaseLayout>
