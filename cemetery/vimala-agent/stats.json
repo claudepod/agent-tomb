@@ -1,0 +1,100 @@
+{
+  "summary": {
+    "db_size_bytes": 6103040,
+    "session_count": 47,
+    "first_at": "2026-04-18T04:52:23.830376+00:00",
+    "last_at": "2026-04-26T05:51:30.682778+00:00",
+    "lifespan_days": 8.04,
+    "input_tokens": 13204961,
+    "output_tokens": 337146,
+    "cache_read_tokens": 24417249,
+    "cache_write_tokens": 757854,
+    "estimated_cost_usd": 32.2439,
+    "message_count": 2388,
+    "models": [
+      "z-ai/glm-5.1",
+      "qwen3-coder-next-mlx",
+      "qwen3.5-35b-a3b",
+      "huihui-ai_qwen3-coder-next-abliterated",
+      "anthropic/claude-opus-4.6",
+      "google/gemma-4-26b-a4b",
+      "claude-opus-4.6"
+    ],
+    "platforms": [
+      "cli"
+    ],
+    "top_tools": [
+      [
+        "terminal",
+        510
+      ],
+      [
+        "read_file",
+        233
+      ],
+      [
+        "execute_code",
+        143
+      ],
+      [
+        "write_file",
+        116
+      ],
+      [
+        "search_files",
+        76
+      ],
+      [
+        "patch",
+        48
+      ],
+      [
+        "todo",
+        34
+      ],
+      [
+        "delegate_task",
+        10
+      ],
+      [
+        "browser_navigate",
+        6
+      ],
+      [
+        "browser_snapshot",
+        2
+      ]
+    ]
+  },
+  "skills": [
+    "apple",
+    "autonomous-ai-agents",
+    "creative",
+    "data-science",
+    "devops",
+    "diagramming",
+    "dogfood",
+    "domain",
+    "email",
+    "feeds",
+    "gaming",
+    "gifs",
+    "github",
+    "inference-sh",
+    "leisure",
+    "mcp",
+    "media",
+    "mlops",
+    "note-taking",
+    "productivity",
+    "red-teaming",
+    "research",
+    "smart-home",
+    "social-media",
+    "software-development"
+  ],
+  "notes": [
+    "63 session JSON dump(s) on disk (sessions/ \u2014 separate from state.db)",
+    "memories/ has 4 entries"
+  ]
+}
