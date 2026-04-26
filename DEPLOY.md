@@ -1,7 +1,74 @@
 # Deploying agentmemorial.com
 
-The site at `web/` is a static Astro build. We deploy it to **Cloudflare Pages**
-because it's free, fast, has built-in DNS, and rebuilds on every push to `main`.
+The site at `web/` is a static Astro build. Either **Vercel** or **Cloudflare
+Pages** works — pick one.
+
+- **Vercel** is the smoothest for Astro out of the box and is preferred when
+  the project owner already has a Vercel account. Section below.
+- **Cloudflare Pages** is a fine alternative; section further down.
+
+---
+
+## Option A — Vercel
+
+### 1. Push the repo to GitHub (one-time)
+
+Already done if `git remote -v` shows `origin → github.com/Claudepod/agent-tomb`.
+
+### 2. Import the project
+
+1. <https://vercel.com/new> → pick the GitHub repo `Claudepod/agent-tomb`.
+2. **Root Directory**: click *Edit* and set to `web`. (Astro lives in a
+   subfolder; the rest of the repo — including `cemetery/` — is still cloned
+   so the build script can read it.)
+3. **Framework preset**: Astro (auto-detected).
+4. **Build & Output**: leave defaults. Vercel reads `web/package.json` and
+   runs `npm run build`, producing `web/dist`.
+5. **Environment variables**: none needed.
+6. **Project Settings → General → Node.js Version**: set to `22.x` to match
+   `.nvmrc`.
+7. Deploy. The first build takes ~60 seconds and gives you a
+   `agent-tomb-<hash>.vercel.app` URL — open it to verify the garden renders
+   and `/cemetery/hermes-001/` shows the seed grave.
+
+### 3. Add the custom domain
+
+1. Project → **Settings → Domains** → add `www.agentmemorial.com` (set as
+   primary) and `agentmemorial.com` (Vercel will auto-redirect to www).
+2. Vercel will show you the exact DNS records to create. Typically:
+
+   | Host | Type  | Value                     |
+   | ---- | ----- | ------------------------- |
+   | `@`  | A     | `76.76.21.21`             |
+   | `www`| CNAME | `cname.vercel-dns.com`    |
+
+### 4. GoDaddy DNS
+
+1. <https://dcc.godaddy.com> → My Products → **DNS** next to
+   `agentmemorial.com`.
+2. Delete or edit the default `Parked` records (the auto-created `A @ → ParkedIP`
+   and the `CNAME www → @`).
+3. Add the two records Vercel gave you (above table). Save.
+4. Propagation usually finishes in 5–30 minutes; check
+   <https://dnschecker.org/#A/agentmemorial.com>.
+5. Back in Vercel, the domain status will flip from **Invalid Configuration**
+   to **Valid Configuration** automatically — TLS certs issue within a minute
+   after that.
+
+### 5. Triggering rebuilds
+
+- Push to `main` → Vercel rebuilds automatically.
+- New burial: add unpacked tomb under `cemetery/<slug>/` (and the optional
+  `.tomb` next to it) → push → site rebuilds. CI (`web.yml`) also validates
+  the cemetery on every PR independently.
+
+### Rollbacks
+
+Project → **Deployments** → any previous deployment → **Promote to Production**.
+
+---
+
+## Option B — Cloudflare Pages
 
 ## One-time setup
 
