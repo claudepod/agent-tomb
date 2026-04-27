@@ -17,6 +17,17 @@ import {
 const PUBLISH_RATE_LIMIT = 5;
 const AUTO_FLAG_THRESHOLD = 3;
 
+export const OPTIONS: APIRoute = async () => {
+  return new Response(null, {
+    status: 204,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type",
+    },
+  });
+};
+
 export const POST: APIRoute = async ({ request }) => {
   try {
     await ensureSchema();

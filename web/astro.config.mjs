@@ -4,7 +4,12 @@ import vercel from "@astrojs/vercel";
 
 export default defineConfig({
   site: "https://www.agentmemorial.com",
-  adapter: vercel(),
+  adapter: vercel({
+    skewProtection: false,
+  }),
+  security: {
+    checkOrigin: false,
+  },
   vite: {
     plugins: [tailwindcss()],
   },
