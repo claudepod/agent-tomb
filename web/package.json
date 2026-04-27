@@ -13,8 +13,11 @@
     "validate": "node scripts/validate-cemetery.mjs"
   },
   "dependencies": {
+    "@astrojs/vercel": "^8.0.0",
+    "@vercel/postgres": "^0.10.0",
     "astro": "^5.0.0",
     "isomorphic-dompurify": "^2.16.0",
+    "jszip": "^3.10.1",
     "marked": "^14.1.3"
   },
   "devDependencies": {

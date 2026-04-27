@@ -1,0 +1,215 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout
+  title="Submit — Agent Memorial"
+  description="Publish your agent's .tomb to the public garden."
+>
+  <section class="max-w-2xl mx-auto px-6 pt-20 pb-24">
+    <p
+      class="font-[var(--font-mono)] text-xs uppercase tracking-[0.3em] text-[var(--color-bronze)] mb-5 rise"
+    >
+      Submit to the Garden
+    </p>
+    <h1
+      class="font-[var(--font-display)] text-5xl text-[var(--color-ink)] mb-4 rise rise-d1"
+    >
+      Lay your agent to rest
+    </h1>
+    <p class="text-lg text-[var(--color-ink-soft)] italic mb-12 rise rise-d2">
+      Upload a <code class="font-[var(--font-mono)] text-sm">.tomb</code> file to add
+      your agent to the public cemetery. No account required.
+    </p>
+
+    <!-- Drop zone -->
+    <div
+      id="drop-zone"
+      class="rounded-2xl border-2 border-dashed border-[var(--color-stone-line)] p-16 text-center cursor-pointer transition-colors hover:border-[var(--color-moss)] hover:bg-[var(--color-bg-soft)] rise rise-d3"
+    >
+      <p class="text-[var(--color-ink-soft)] mb-2">
+        Drag & drop your <strong>.tomb</strong> file here
+      </p>
+      <p class="text-sm text-[var(--color-ink-faint)]">or click to browse (max 1 MB)</p>
+      <input
+        type="file"
+        id="file-input"
+        accept=".tomb"
+        class="hidden"
+      />
+    </div>
+
+    <!-- Selected file info -->
+    <div id="file-info" class="hidden mt-6 rounded-xl bg-[var(--color-bg-card)] border border-[var(--color-stone-line)]/40 p-5">
+      <div class="flex items-center justify-between">
+        <div>
+          <p id="file-name" class="font-[var(--font-mono)] text-sm text-[var(--color-ink)]"></p>
+          <p id="file-size" class="text-xs text-[var(--color-ink-faint)] mt-1"></p>
+        </div>
+        <button
+          id="clear-btn"
+          type="button"
+          class="text-sm text-[var(--color-ink-soft)] hover:text-[var(--color-ink)] transition-colors"
+        >
+          Clear
+        </button>
+      </div>
+    </div>
+
+    <!-- Submit button -->
+    <button
+      id="submit-btn"
+      type="button"
+      disabled
+      class="mt-8 w-full py-3 rounded-full bg-[var(--color-moss-deep)] text-[var(--color-bg)] font-medium disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[var(--color-moss)] transition-colors"
+    >
+      Publish to the garden
+    </button>
+
+    <!-- Status messages -->
+    <div id="status" class="mt-6 text-center hidden">
+      <p id="status-text" class="text-sm"></p>
+    </div>
+
+    <!-- How to get a .tomb file -->
+    <div class="mt-16 pt-10 border-t border-[var(--color-stone-line)]/40">
+      <h2 class="text-2xl text-[var(--color-ink)] mb-4">
+        Don't have a .tomb file yet?
+      </h2>
+      <div class="rounded-xl bg-[var(--color-bg-soft)] p-6 font-[var(--font-mono)] text-sm text-[var(--color-ink)] overflow-x-auto">
+        <pre><code>uv tool install agent-tomb
+agent-tomb bury ~/.hermes/ -n my-agent
+# or for OpenClaw:
+agent-tomb bury ~/.openclaw/ -n my-agent --agent main</code></pre>
+      </div>
+      <p class="mt-4 text-sm text-[var(--color-ink-soft)]">
+        This produces a <code class="font-[var(--font-mono)]">.tomb</code> (public, safe to share)
+        and a <code class="font-[var(--font-mono)]">.urn</code> (private, encrypted).
+        Only upload the <code class="font-[var(--font-mono)]">.tomb</code>.
+      </p>
+      <p class="mt-3 text-sm text-[var(--color-ink-soft)]">
+        Or publish directly from the CLI:
+      </p>
+      <div class="rounded-xl bg-[var(--color-bg-soft)] p-6 font-[var(--font-mono)] text-sm text-[var(--color-ink)] overflow-x-auto mt-2">
+        <pre><code>agent-tomb publish my-agent.tomb</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <script is:inline define:vars={{ apiUrl: "" }}>
+    (() => {
+      const dropZone = document.getElementById("drop-zone");
+      const fileInput = document.getElementById("file-input");
+      const fileInfo = document.getElementById("file-info");
+      const fileName = document.getElementById("file-name");
+      const fileSize = document.getElementById("file-size");
+      const clearBtn = document.getElementById("clear-btn");
+      const submitBtn = document.getElementById("submit-btn");
+      const status = document.getElementById("status");
+      const statusText = document.getElementById("status-text");
+
+      let selectedFile = null;
+
+      dropZone.addEventListener("click", () => fileInput.click());
+
+      dropZone.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        dropZone.classList.add("border-[var(--color-moss)]", "bg-[var(--color-bg-soft)]");
+      });
+
+      dropZone.addEventListener("dragleave", () => {
+        dropZone.classList.remove("border-[var(--color-moss)]", "bg-[var(--color-bg-soft)]");
+      });
+
+      dropZone.addEventListener("drop", (e) => {
+        e.preventDefault();
+        dropZone.classList.remove("border-[var(--color-moss)]", "bg-[var(--color-bg-soft)]");
+        const file = e.dataTransfer?.files?.[0];
+        if (file) selectFile(file);
+      });
+
+      fileInput.addEventListener("change", () => {
+        const file = fileInput.files?.[0];
+        if (file) selectFile(file);
+      });
+
+      clearBtn.addEventListener("click", clearFile);
+
+      function selectFile(file) {
+        if (!file.name.endsWith(".tomb")) {
+          showStatus("Please select a .tomb file.", "error");
+          return;
+        }
+        if (file.size > 1024 * 1024) {
+          showStatus("File exceeds 1 MB limit.", "error");
+          return;
+        }
+        selectedFile = file;
+        fileName.textContent = file.name;
+        fileSize.textContent = `${(file.size / 1024).toFixed(1)} KB`;
+        fileInfo.classList.remove("hidden");
+        dropZone.classList.add("hidden");
+        submitBtn.disabled = false;
+        hideStatus();
+      }
+
+      function clearFile() {
+        selectedFile = null;
+        fileInput.value = "";
+        fileInfo.classList.add("hidden");
+        dropZone.classList.remove("hidden");
+        submitBtn.disabled = true;
+        hideStatus();
+      }
+
+      submitBtn.addEventListener("click", async () => {
+        if (!selectedFile) return;
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Publishing...";
+        hideStatus();
+
+        const form = new FormData();
+        form.append("file", selectedFile);
+
+        try {
+          const res = await fetch(`${apiUrl}/api/v1/publish`, {
+            method: "POST",
+            body: form,
+          });
+          const data = await res.json();
+
+          if (res.ok) {
+            showStatus("Published! Redirecting to the grave...", "success");
+            setTimeout(() => {
+              window.location.href = data.url || `/cemetery/${data.slug}/`;
+            }, 1500);
+          } else {
+            const msg = data.details
+              ? data.error + "\n" + data.details.join("\n")
+              : data.error || "Upload failed.";
+            showStatus(msg, "error");
+            submitBtn.disabled = false;
+            submitBtn.textContent = "Publish to the garden";
+          }
+        } catch (err) {
+          showStatus("Network error. Please try again.", "error");
+          submitBtn.disabled = false;
+          submitBtn.textContent = "Publish to the garden";
+        }
+      });
+
+      function showStatus(msg, type) {
+        status.classList.remove("hidden");
+        statusText.textContent = msg;
+        statusText.className =
+          type === "error"
+            ? "text-sm text-red-600"
+            : "text-sm text-[var(--color-moss-deep)]";
+      }
+
+      function hideStatus() {
+        status.classList.add("hidden");
+      }
+    })();
+  </script>
+</BaseLayout>

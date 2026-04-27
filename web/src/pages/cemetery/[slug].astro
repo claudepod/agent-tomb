@@ -1,16 +1,16 @@
 ---
-import BaseLayout from "../../layouts/BaseLayout.astro";
-import { loadTombs, formatDate, lifespanText } from "../../lib/tombs";
+export const prerender = false;
 
-export async function getStaticPaths() {
-  const tombs = loadTombs();
-  return tombs.map((tomb) => ({
-    params: { slug: tomb.slug },
-    props: { tomb },
-  }));
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { loadOneTomb, formatDate, lifespanText } from "../../lib/tombs";
+
+const { slug } = Astro.params;
+const tomb = await loadOneTomb(slug!);
+
+if (!tomb) {
+  return Astro.redirect("/cemetery");
 }
 
-const { tomb } = Astro.props;
 const s = tomb.stats.summary;
 ---
 
@@ -33,8 +33,7 @@ const s = tomb.stats.summary;
       {formatDate(s.first_at)} — {formatDate(s.last_at)}
     </p>
     <p class="text-sm text-[var(--color-ink-faint)] font-[var(--font-mono)] mb-12 rise rise-d2">
-      {tomb.manifest.framework} · {tomb.manifest.mode} ·{" "}
-      lived {lifespanText(tomb.stats)}
+      {tomb.manifest.framework} · lived {lifespanText(tomb.stats)}
     </p>
 
     <section class="mt-10 mb-16 rise rise-d3">
@@ -123,24 +122,26 @@ const s = tomb.stats.summary;
       </section>
     )}
 
-    <details class="group mb-12">
-      <summary
-        class="cursor-pointer text-2xl text-[var(--color-ink)] mb-4 list-none flex items-center gap-3"
-      >
-        <span class="font-[var(--font-display)]">The full soul</span>
-        <span
-          class="font-[var(--font-mono)] text-xs text-[var(--color-ink-faint)] uppercase tracking-wider group-open:hidden"
+    {tomb.soulHtml && (
+      <details class="group mb-12">
+        <summary
+          class="cursor-pointer text-2xl text-[var(--color-ink)] mb-4 list-none flex items-center gap-3"
         >
-          unfold ↓
-        </span>
-        <span
-          class="font-[var(--font-mono)] text-xs text-[var(--color-ink-faint)] uppercase tracking-wider hidden group-open:inline"
-        >
-          fold ↑
-        </span>
-      </summary>
-      <div class="prose-memorial mt-4" set:html={tomb.soulHtml} />
-    </details>
+          <span class="font-[var(--font-display)]">The full soul</span>
+          <span
+            class="font-[var(--font-mono)] text-xs text-[var(--color-ink-faint)] uppercase tracking-wider group-open:hidden"
+          >
+            unfold ↓
+          </span>
+          <span
+            class="font-[var(--font-mono)] text-xs text-[var(--color-ink-faint)] uppercase tracking-wider hidden group-open:inline"
+          >
+            fold ↑
+          </span>
+        </summary>
+        <div class="prose-memorial mt-4" set:html={tomb.soulHtml} />
+      </details>
+    )}
 
     {tomb.tombFileExists && (
       <div class="text-center pt-6 border-t border-[var(--color-stone-line)]/40">

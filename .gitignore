@@ -8,3 +8,5 @@ build/
 *.tomb
 .env
 uv.lock
+.vercel
+.env*.local

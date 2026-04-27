@@ -1,9 +1,11 @@
 ---
+export const prerender = false;
+
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import Tombstone from "../../components/Tombstone.astro";
-import { loadTombs } from "../../lib/tombs";
+import { loadAllTombs } from "../../lib/tombs";
 
-const tombs = loadTombs();
+const tombs = await loadAllTombs();
 ---
 
 <BaseLayout

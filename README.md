@@ -35,6 +35,17 @@ agent-tomb bury ~/.hermes/ -n my-agent
 # → my-agent.urn    the private urn (encrypted raw remains)
 ```
 
+### Publishing to the public garden
+
+```bash
+# Upload to agentmemorial.com (no account needed)
+agent-tomb publish my-agent.tomb
+
+# Or drag-and-drop at https://www.agentmemorial.com/submit
+```
+
+Requires `httpx`: install with `uv tool install 'agent-tomb[publish]'`.
+
 ### Choosing the epitaph
 
 `--epitaph` takes one of three values:

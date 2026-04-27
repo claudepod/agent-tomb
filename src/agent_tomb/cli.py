@@ -420,5 +420,115 @@ def _do_cleanup(scanner, assume_yes: bool) -> None:
     console.print(msg)
 
 
+DEFAULT_API_URL = "https://www.agentmemorial.com"
+
+REQUIRED_TOMB_FILES = {"manifest.json", "soul.md", "epitaph.md", "stats.json"}
+FORBIDDEN_TOMB_FILES = {"burial.enc", "burial.meta.json"}
+
+
+@main.command()
+@click.argument(
+    "tomb_path",
+    type=click.Path(exists=True, dir_okay=False, path_type=Path),
+)
+@click.option(
+    "--api-url",
+    default=DEFAULT_API_URL,
+    show_default=True,
+    help="API endpoint for the public cemetery.",
+)
+def publish(tomb_path: Path, api_url: str) -> None:
+    """Publish a .tomb to the public garden at agentmemorial.com."""
+    try:
+        import httpx
+    except ImportError:
+        console.print(
+            "[red]Publishing requires httpx.[/red] "
+            "Install with: [bold]uv pip install 'agent-tomb\\[publish]'[/bold]"
+        )
+        raise SystemExit(1)
+
+    if not tomb_path.name.endswith(".tomb"):
+        console.print("[red]File must have a .tomb extension.[/red]")
+        raise SystemExit(1)
+
+    if tomb_path.stat().st_size > 1024 * 1024:
+        console.print("[red]File exceeds 1 MB limit.[/red]")
+        raise SystemExit(1)
+
+    # Local validation
+    try:
+        with zipfile.ZipFile(tomb_path) as z:
+            names = set(z.namelist())
+    except zipfile.BadZipFile:
+        console.print("[red]Not a valid zip archive.[/red]")
+        raise SystemExit(1)
+
+    missing = REQUIRED_TOMB_FILES - names
+    if missing:
+        console.print(f"[red]Missing required files:[/red] {', '.join(sorted(missing))}")
+        raise SystemExit(1)
+
+    forbidden = FORBIDDEN_TOMB_FILES & names
+    if forbidden:
+        console.print(
+            f"[red]Forbidden files detected:[/red] {', '.join(sorted(forbidden))}. "
+            f"Upload the .tomb file, not the .urn."
+        )
+        raise SystemExit(1)
+
+    # Read name from manifest for display
+    try:
+        with zipfile.ZipFile(tomb_path) as z:
+            manifest = json.loads(z.read("manifest.json"))
+            agent_name = manifest.get("name", tomb_path.stem)
+    except (KeyError, json.JSONDecodeError):
+        agent_name = tomb_path.stem
+
+    console.print(
+        f"[dim]Publishing [bold]{agent_name}[/bold] to {api_url}...[/dim]"
+    )
+
+    # Upload
+    url = f"{api_url}/api/v1/publish"
+    try:
+        with open(tomb_path, "rb") as f:
+            files = {"file": (tomb_path.name, f, "application/zip")}
+            resp = httpx.post(url, files=files, timeout=30)
+    except httpx.HTTPError as e:
+        console.print(f"[red]Network error:[/red] {e}")
+        console.print(
+            "[dim]You can also submit manually at "
+            "https://www.agentmemorial.com/submit[/dim]"
+        )
+        raise SystemExit(1)
+
+    if resp.status_code == 201:
+        data = resp.json()
+        console.print(
+            Panel(
+                f"[green]✓[/green] [bold]{agent_name}[/bold] has been laid to rest "
+                f"in the public garden.\n\n"
+                f"[dim]Visit:[/dim] [bold]{data.get('url', '')}[/bold]",
+                title="Published",
+                border_style="green",
+            )
+        )
+    elif resp.status_code == 429:
+        console.print("[yellow]Rate limit exceeded.[/yellow] Please try again later.")
+        raise SystemExit(1)
+    else:
+        try:
+            data = resp.json()
+            error = data.get("error", "Unknown error")
+            details = data.get("details", [])
+            console.print(f"[red]Publish failed:[/red] {error}")
+            for d in details:
+                console.print(f"  [dim]• {d}[/dim]")
+        except Exception:
+            console.print(f"[red]Publish failed:[/red] HTTP {resp.status_code}")
+        raise SystemExit(1)
+
+
 if __name__ == "__main__":
     main()

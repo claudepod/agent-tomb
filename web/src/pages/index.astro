@@ -1,8 +1,10 @@
 ---
-import BaseLayout from "../layouts/BaseLayout.astro";
-import { loadTombs } from "../lib/tombs";
+export const prerender = false;
 
-const tombs = loadTombs();
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { loadAllTombs } from "../lib/tombs";
+
+const tombs = await loadAllTombs();
 const tombCount = tombs.length;
 ---
 
@@ -88,11 +90,14 @@ const tombCount = tombs.length;
       <p class="text-[var(--color-ink-faint)] mt-5 mb-2"># perform the rite</p>
       <pre><code>agent-tomb scan ~/.hermes/
 agent-tomb bury ~/.hermes/ -n my-agent
-# → my-agent.tomb (public)  +  my-agent.urn (private, sealed with your passphrase)</code></pre>
+# → my-agent.tomb (public)  +  my-agent.urn (private, sealed with your passphrase)
+
+# publish to the garden
+agent-tomb publish my-agent.tomb</code></pre>
     </div>
 
     <p class="mt-6 text-center text-[var(--color-ink-soft)]">
-      Currently supports <strong>Hermes</strong>. OpenHands and others to follow.
+      Supports <strong>Hermes</strong> and <strong>OpenClaw</strong>. OpenHands and others to follow.
     </p>
   </section>
 
