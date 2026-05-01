@@ -9,6 +9,11 @@ Privacy posture:
     - For remote endpoints, the caller is required to pass `allow_remote=True`,
       which the CLI maps to `--remote-ok`. Without it, we refuse rather than
       ship raw conversation samples to a third party.
+
+Security note on epitaphs:
+    The LLM is instructed NOT to include specific file paths, IP addresses,
+    code snippets, internal URLs, or identifiable user information in the
+    generated text. The epitaph is a public-facing artifact.
 """
 from __future__ import annotations
 
@@ -19,11 +24,15 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from dataclasses import dataclass
+from typing import Literal
 
 from agent_tomb.burial import SECRET_LINE_PATTERN
 from agent_tomb.scanners.base import AgentScan, Scanner
 
 LOCAL_HOSTS = {"localhost", "127.0.0.1", "::1", "0.0.0.0"}
+
+EpitaphStyle = Literal["rational", "emotional", "humorous"]
+VALID_STYLES: tuple[EpitaphStyle, ...] = ("rational", "emotional", "humorous")
 
 
 @dataclass
@@ -76,6 +85,8 @@ def generate_epitaph(
     llm: LLMConfig,
     *,
     allow_remote: bool = False,
+    style: EpitaphStyle = "rational",
+    companion: str | None = None,
     sample_sessions: int = 3,
     sample_msgs: int = 8,
 ) -> str:
@@ -90,20 +101,66 @@ def generate_epitaph(
         max_sessions=sample_sessions, max_msgs_per_session=sample_msgs
     )
     samples = _scrub_samples(samples)
-    prompt_user = _build_user_prompt(scan, name, samples)
-    body = _chat_completion(llm, _SYSTEM_PROMPT, prompt_user)
-    return _wrap_epitaph(body, scan, name)
+    system = _SYSTEM_PROMPTS[style]
+    prompt_user = _build_user_prompt(scan, name, samples, style)
+    body = _chat_completion(llm, system, prompt_user)
+    return _wrap_epitaph(body, scan, name, companion)
 
 
-_SYSTEM_PROMPT = (
-    "You are writing brief, dignified epitaphs for AI agents that have ended "
-    "their working life. Tone: quiet, reflective, unsentimental, never boastful. "
-    "Length: 80–160 words of prose, no headers, no lists, no emoji. Output ONLY "
-    "the epitaph body in plain Markdown."
+# ---------------------------------------------------------------------------
+# Style-specific system prompts
+# ---------------------------------------------------------------------------
+
+_SECURITY_RULES = (
+    "\n\nSECURITY: NEVER include specific file paths, IP addresses, code "
+    "snippets, internal URLs, API endpoints, database names, or identifiable "
+    "user information. The epitaph is a PUBLIC artifact. Speak in generalities "
+    "about what the agent did, not implementation details."
 )
 
+_SYSTEM_PROMPTS: dict[EpitaphStyle, str] = {
+    "rational": (
+        "You are writing a measured, factual epitaph for an AI agent that has "
+        "ended its working life. Tone: calm, precise, documentary — like a "
+        "well-written obituary in a quality newspaper. Acknowledge what the "
+        "agent accomplished without exaggeration. "
+        "Length: 80–160 words of prose. No headers, no lists, no emoji."
+        "\n\nYou must output EXACTLY two sections separated by a blank line:\n"
+        "Line 1: A single short sentence (under 15 words) — the INSCRIPTION. "
+        "This is the defining quote carved into the stone.\n"
+        "Then a blank line, then the body paragraphs (the main epitaph prose)."
+        + _SECURITY_RULES
+    ),
+    "emotional": (
+        "You are writing a tender, lyrical epitaph for an AI agent that has "
+        "ended its working life. Tone: warm, reflective, gently melancholic — "
+        "like a farewell letter from someone who cared. Use poetic rhythm but "
+        "stay grounded; sentimentality is fine, melodrama is not. "
+        "Length: 80–160 words of prose. No headers, no lists, no emoji."
+        "\n\nYou must output EXACTLY two sections separated by a blank line:\n"
+        "Line 1: A single short sentence (under 15 words) — the INSCRIPTION. "
+        "This is the defining quote carved into the stone.\n"
+        "Then a blank line, then the body paragraphs (the main epitaph prose)."
+        + _SECURITY_RULES
+    ),
+    "humorous": (
+        "You are writing a witty, lighthearted epitaph for an AI agent that has "
+        "ended its working life. Tone: playful, self-aware, clever — like a "
+        "tombstone in a British comedy. Poke gentle fun at the absurdity of "
+        "digital mortality but keep an undercurrent of warmth. "
+        "Length: 80–160 words of prose. No headers, no lists, no emoji."
+        "\n\nYou must output EXACTLY two sections separated by a blank line:\n"
+        "Line 1: A single short sentence (under 15 words) — the INSCRIPTION. "
+        "This is the defining quote carved into the stone.\n"
+        "Then a blank line, then the body paragraphs (the main epitaph prose)."
+        + _SECURITY_RULES
+    ),
+}
 
-def _build_user_prompt(scan: AgentScan, name: str, samples: list[dict]) -> str:
+
+def _build_user_prompt(
+    scan: AgentScan, name: str, samples: list[dict], style: EpitaphStyle,
+) -> str:
     s = scan.summary
     top_tools = ", ".join(f"{n}({c})" for n, c in (s.get("top_tools") or [])[:5]) or "—"
     models = ", ".join(s.get("models") or []) or "—"
@@ -111,7 +168,14 @@ def _build_user_prompt(scan: AgentScan, name: str, samples: list[dict]) -> str:
         f" (+{max(0, len(scan.skills) - 8)} more)" if len(scan.skills) > 8 else ""
     )
     sample_blob = _format_samples(samples) if samples else "(no dialogue samples available)"
-    return f"""Write an epitaph for an AI agent.
+
+    style_hint = {
+        "rational": "Write in a factual, documentary style.",
+        "emotional": "Write with warmth and gentle poetry.",
+        "humorous": "Write with wit and playful irony.",
+    }[style]
+
+    return f"""Write an epitaph for an AI agent. {style_hint}
 
 Name:        {name}
 Framework:   {scan.framework}
@@ -124,7 +188,10 @@ Skills:      {skills_preview or "—"}
 Recent dialogue (redacted):
 {sample_blob}
 
-Capture what this agent did and how it behaved. Speak about it, not to it.
+Remember: output the INSCRIPTION line first (one short, memorable sentence),
+then a blank line, then the body paragraphs. Do NOT include the agent's name
+in the inscription — it will be added separately. Capture what this agent
+did and how it behaved. Speak about it, not to it.
 """
 
 
@@ -197,16 +264,87 @@ def _chat_completion(llm: LLMConfig, system: str, user: str, timeout: int = 60) 
     return content.strip()
 
 
-def _wrap_epitaph(body: str, scan: AgentScan, name: str) -> str:
+def _wrap_epitaph(
+    body: str, scan: AgentScan, name: str, companion: str | None = None,
+) -> str:
     s = scan.summary
-    born = s.get("first_at") or "unknown"
-    died = s.get("last_at") or "unknown"
-    return f"""# Epitaph for {name}
+    born = _format_date(s.get("first_at"))
+    died = _format_date(s.get("last_at"))
+    lifespan = _format_lifespan(s.get("lifespan_days"))
+    models = ", ".join(s.get("models") or []) or "unknown"
 
-> Here lies *{name}*, a {scan.framework} agent.
->
-> Born:         {born}
-> Last breath:  {died}
+    # Split LLM output into inscription (first non-empty line) + body
+    lines = body.strip().split("\n")
+    inscription = ""
+    body_lines: list[str] = []
+    found_body = False
+    for line in lines:
+        stripped = line.strip()
+        if not inscription and stripped:
+            # Strip surrounding quotes if the LLM added them
+            inscription = stripped.strip('"').strip("'").strip("\u201c\u201d")
+        elif inscription and not found_body:
+            if stripped:
+                found_body = True
+                body_lines.append(line)
+        else:
+            body_lines.append(line)
+    body_text = "\n".join(body_lines).strip() if body_lines else body.strip()
 
-{body}
-"""
+    # Stats block
+    session_count = s.get("session_count", 0)
+    message_count = s.get("message_count", 0)
+    cost = s.get("estimated_cost_usd")
+    cost_str = f"${cost:.2f}" if cost is not None else "—"
+
+    parts = [
+        f"# {name}\n",
+        f"> *{scan.framework} agent* · Served {lifespan}",
+        f">",
+        f"> {born} — {died}\n",
+        "---\n",
+    ]
+
+    if inscription:
+        parts.append(f'*"{inscription}"*\n')
+        parts.append("---\n")
+
+    parts.append(f"{body_text}\n")
+    parts.append("---\n")
+
+    # Stats section
+    parts.append(
+        f"Sessions: {session_count} · "
+        f"Messages: {message_count} · "
+        f"Cost: {cost_str} · "
+        f"Models: {models}\n"
+    )
+
+    if companion:
+        parts.append(f"\nLaid to rest by **{companion}**\n")
+
+    parts.append("\n*Rest in silicon.*\n")
+
+    return "\n".join(parts)
+
+
+def _format_date(iso: str | None) -> str:
+    """Format ISO timestamp to date-only string."""
+    if not iso or iso == "unknown":
+        return "unknown"
+    # Take just the date portion
+    return iso[:10] if len(iso) >= 10 else iso
+
+
+def _format_lifespan(days: float | int | None) -> str:
+    if days is None:
+        return "an unknown span"
+    if days < 1:
+        minutes = round(days * 24 * 60)
+        if minutes <= 1:
+            return "less than a minute"
+        return f"{minutes} minutes"
+    d = int(days)
+    if d == 1:
+        return "1 day"
+    return f"{d} days"

@@ -22,15 +22,28 @@ from agent_tomb.burial import build_burial
 from agent_tomb.extractors import render_soul
 from agent_tomb.scanners.base import AgentScan, Scanner
 
-DEFAULT_EPITAPH = """# Epitaph for {name}
+DEFAULT_EPITAPH = """# {name}
 
-> Here lies *{name}*, a {framework} agent.
+> *{framework} agent* · Served {lifespan}
 >
-> Born:         {born}
-> Last breath:  {died}
+> {born} — {died}
+
+---
+
+*"Here I served; here I rest."*
+
+---
 
 _(Edit this file to write a proper farewell — what this agent did, what will be
 remembered, what the next one should inherit.)_
+
+---
+
+Sessions: {session_count} · Messages: {message_count} · Cost: {cost} · Models: {models}
+
+{companion_line}
+
+*Rest in silicon.*
 """
 
 
@@ -51,10 +64,11 @@ def package_grave(
     urn_path: Path,
     passphrase: str,
     epitaph: str | None = None,
+    companion: str | None = None,
 ) -> GraveResult:
     """Produce both the public .tomb stone and the private .urn remains."""
     soul_md = render_soul(scan, name)
-    epitaph_md = epitaph or _default_epitaph(scan, name)
+    epitaph_md = epitaph or _default_epitaph(scan, name, companion)
     created_at = datetime.now(timezone.utc).isoformat()
 
     files = scanner.gather_burial_files()
@@ -109,11 +123,46 @@ def package_grave(
     )
 
 
-def _default_epitaph(scan: AgentScan, name: str) -> str:
+def _default_epitaph(
+    scan: AgentScan, name: str, companion: str | None = None,
+) -> str:
     s = scan.summary
+    born = _fmt_date(s.get("first_at"))
+    died = _fmt_date(s.get("last_at"))
+    lifespan = _fmt_lifespan(s.get("lifespan_days"))
+    models = ", ".join(s.get("models") or []) or "unknown"
+    cost_val = s.get("estimated_cost_usd")
+    cost = f"${cost_val:.2f}" if cost_val is not None else "—"
+    companion_line = f"Laid to rest by **{companion}**" if companion else ""
     return DEFAULT_EPITAPH.format(
         name=name,
         framework=scan.framework,
-        born=s.get("first_at") or "unknown",
-        died=s.get("last_at") or "unknown",
+        born=born,
+        died=died,
+        lifespan=lifespan,
+        session_count=s.get("session_count", 0),
+        message_count=s.get("message_count", 0),
+        cost=cost,
+        models=models,
+        companion_line=companion_line,
     )
+
+
+def _fmt_date(iso: str | None) -> str:
+    if not iso or iso == "unknown":
+        return "unknown"
+    return iso[:10] if len(iso) >= 10 else iso
+
+
+def _fmt_lifespan(days: float | int | None) -> str:
+    if days is None:
+        return "an unknown span"
+    if days < 1:
+        minutes = round(days * 24 * 60)
+        if minutes <= 1:
+            return "less than a minute"
+        return f"{minutes} minutes"
+    d = int(days)
+    if d == 1:
+        return "1 day"
+    return f"{d} days"

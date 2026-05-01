@@ -1,0 +1,140 @@
+%%{init: {'theme': 'dark', 'themeVariables': {'fontSize': '14px'}}}%%
+flowchart TB
+    subgraph USER["User"]
+        CLI["CLI: agent-tomb"]
+        WEB["Browser: agentmemorial.com"]
+    end
+
+    subgraph SCAN["Scan Phase"]
+        direction TB
+        CMD_SCAN["scan / extract-soul"]
+        HERMES["HermesScanner<br/>~/.hermes/"]
+        OPENCLAW["OpenClawScanner<br/>~/.openclaw/"]
+        AGENT_ID["--agent flag<br/>(multi-agent)"]
+        AGENT_SCAN["AgentScan<br/>sessions, skills,<br/>stats, persona"]
+    end
+
+    subgraph BURY["Burial Phase"]
+        direction TB
+        CMD_BURY["bury"]
+        CRED_DETECT["Credential Detection<br/>+ Secret Scanning"]
+        SOUL_GEN["Soul Generation<br/>(soul.md)"]
+        EPITAPH_GEN["Epitaph Generation<br/>(LLM epitaph.md)"]
+        TOMB_FILE[".tomb file<br/>(zip: manifest.json,<br/>soul.md, epitaph.md,<br/>stats.json)"]
+        URN_FILE[".urn file<br/>(AES-256-GCM<br/>encrypted archive)"]
+    end
+
+    subgraph EXHUME["Exhume Phase"]
+        CMD_EXHUME["exhume"]
+        DECRYPT["Decrypt .urn<br/>with password"]
+    end
+
+    subgraph PUBLISH["Publish Phase"]
+        direction TB
+        CMD_PUBLISH["CLI: publish"]
+        SUBMIT_PAGE["Web: /submit<br/>drag & drop"]
+        LOCAL_VALIDATE["Local Validation<br/>(size, structure)"]
+        HTTP_POST["POST .tomb<br/>multipart/form-data"]
+    end
+
+    subgraph API["Vercel API Routes"]
+        direction TB
+        PUBLISH_EP["POST /api/v1/publish"]
+        LIST_EP["GET /api/v1/tombs"]
+        DETAIL_EP["GET /api/v1/tombs/:slug"]
+        REPORT_EP["POST /api/v1/report/:slug"]
+
+        subgraph VALIDATION["Upload Validation"]
+            RATE_LIMIT["Rate Limit<br/>5/hour/IP"]
+            ZIP_CHECK["Zip Structure<br/>required + forbidden files"]
+            MANIFEST_CHECK["Manifest Validation<br/>name, framework, version"]
+            SECRET_SCAN["Secret Scanning<br/>sk-, AKIA, ghp_,<br/>BEGIN PRIVATE KEY"]
+        end
+    end
+
+    subgraph STORAGE["Storage"]
+        POSTGRES[("Vercel Postgres<br/>(Neon)<br/>tombs, reports,<br/>rate_limits")]
+        GIT_CEMETERY["Git: cemetery/<br/>(pre-existing tombs)"]
+    end
+
+    subgraph WEBSITE["Astro Website (SSR)"]
+        direction TB
+        HOME["/ — Home"]
+        BURY_GUIDE["/bury — Guide"]
+        CEMETERY_LIST["/cemetery — List All"]
+        CEMETERY_DETAIL["/cemetery/:slug — Detail"]
+        SUBMIT_UI["/submit — Upload Form"]
+
+        TOMBS_LIB["tombs.ts<br/>loadAllTombs()<br/>merge git + DB"]
+        MD_RENDER["Markdown Render<br/>+ XSS Sanitize"]
+    end
+
+    %% Scan flow
+    CLI --> CMD_SCAN
+    CMD_SCAN --> HERMES
+    CMD_SCAN --> OPENCLAW
+    OPENCLAW -.-> AGENT_ID
+    HERMES --> AGENT_SCAN
+    OPENCLAW --> AGENT_SCAN
+
+    %% Bury flow
+    CLI --> CMD_BURY
+    AGENT_SCAN --> CMD_BURY
+    CMD_BURY --> CRED_DETECT
+    CMD_BURY --> SOUL_GEN
+    CMD_BURY --> EPITAPH_GEN
+    CRED_DETECT --> TOMB_FILE
+    SOUL_GEN --> TOMB_FILE
+    EPITAPH_GEN --> TOMB_FILE
+    CMD_BURY --> URN_FILE
+
+    %% Exhume flow
+    CLI --> CMD_EXHUME
+    URN_FILE -.-> CMD_EXHUME
+    CMD_EXHUME --> DECRYPT
+
+    %% Publish flow
+    CLI --> CMD_PUBLISH
+    WEB --> SUBMIT_PAGE
+    TOMB_FILE --> CMD_PUBLISH
+    CMD_PUBLISH --> LOCAL_VALIDATE --> HTTP_POST
+    SUBMIT_PAGE --> HTTP_POST
+    HTTP_POST --> PUBLISH_EP
+
+    %% API validation
+    PUBLISH_EP --> RATE_LIMIT
+    RATE_LIMIT --> ZIP_CHECK
+    ZIP_CHECK --> MANIFEST_CHECK
+    MANIFEST_CHECK --> SECRET_SCAN
+    SECRET_SCAN --> POSTGRES
+
+    %% API reads
+    LIST_EP --> POSTGRES
+    DETAIL_EP --> POSTGRES
+    REPORT_EP --> POSTGRES
+
+    %% Website rendering
+    CEMETERY_LIST --> TOMBS_LIB
+    CEMETERY_DETAIL --> TOMBS_LIB
+    TOMBS_LIB --> POSTGRES
+    TOMBS_LIB --> GIT_CEMETERY
+    TOMBS_LIB --> MD_RENDER
+
+    %% Abuse flow
+    WEB -.->|"report abuse"| REPORT_EP
+    REPORT_EP -.->|"3 reports = auto-flag"| POSTGRES
+
+    %% Styling
+    classDef cmd fill:#4a9eff,stroke:#333,color:#fff
+    classDef file fill:#ff9f43,stroke:#333,color:#fff
+    classDef api fill:#a55eea,stroke:#333,color:#fff
+    classDef db fill:#26de81,stroke:#333,color:#fff
+    classDef web fill:#fd79a8,stroke:#333,color:#fff
+    classDef validate fill:#ffeaa7,stroke:#333,color:#333
+
+    class CMD_SCAN,CMD_BURY,CMD_EXHUME,CMD_PUBLISH cmd
+    class TOMB_FILE,URN_FILE file
+    class PUBLISH_EP,LIST_EP,DETAIL_EP,REPORT_EP api
+    class POSTGRES,GIT_CEMETERY db
+    class HOME,BURY_GUIDE,CEMETERY_LIST,CEMETERY_DETAIL,SUBMIT_UI,SUBMIT_PAGE web
+    class RATE_LIMIT,ZIP_CHECK,MANIFEST_CHECK,SECRET_SCAN,CRED_DETECT validate

@@ -108,6 +108,15 @@ code, pre, kbd, .mono {
   background: transparent;
   padding: 0;
 }
+.prose-memorial hr {
+  border: none;
+  border-top: 1px solid color-mix(in oklab, var(--color-stone-line), transparent 50%);
+  margin-block: 1.5rem;
+}
+.prose-memorial strong {
+  color: var(--color-ink);
+  font-weight: 600;
+}
 
 @keyframes rise {
   from { opacity: 0; transform: translateY(12px); }

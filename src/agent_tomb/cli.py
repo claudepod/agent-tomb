@@ -15,7 +15,13 @@ from rich.table import Table
 from agent_tomb import scanners
 from agent_tomb.burial import open_burial
 from agent_tomb.extractors import render_soul
-from agent_tomb.llm import LLMConfig, generate_epitaph, resolve_llm_config
+from agent_tomb.llm import (
+    VALID_STYLES,
+    EpitaphStyle,
+    LLMConfig,
+    generate_epitaph,
+    resolve_llm_config,
+)
 from agent_tomb.packager import package_grave
 
 console = Console()
@@ -214,6 +220,18 @@ def extract_soul(path: Path, output: Path | None, name: str | None, agent_id: st
     help="Acknowledge that the LLM endpoint is non-local; required to send "
     "samples to a remote API.",
 )
+@click.option(
+    "--style",
+    type=click.Choice(VALID_STYLES),
+    default="rational",
+    show_default=True,
+    help="Epitaph style: rational (factual), emotional (lyrical), humorous (witty).",
+)
+@click.option(
+    "--companion",
+    default=None,
+    help="Your name — recorded as 'Laid to rest by' on the epitaph.",
+)
 def bury(
     path: Path,
     name: str,
@@ -227,6 +245,8 @@ def bury(
     llm_api_key: str | None,
     llm_model: str | None,
     remote_ok: bool,
+    style: EpitaphStyle,
+    companion: str | None,
 ) -> None:
     """Lay an agent to rest. Produces <name>.tomb (public) and <name>.urn (private)."""
     scanner = scanners.detect(path, agent_id=agent_id)
@@ -242,6 +262,7 @@ def bury(
     epitaph_text = _resolve_epitaph(
         epitaph_arg, scanner, result, name,
         llm_base_url, llm_api_key, llm_model, remote_ok,
+        style=style, companion=companion,
     )
 
     passphrase = _resolve_passphrase(passphrase_path, confirm=True)
@@ -252,8 +273,38 @@ def bury(
         )
         raise SystemExit(2)
 
+    # --- Burial ceremony ---
+    console.print()
+    console.print("[dim]━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/dim]")
+    console.print()
+    console.print(f"  [bold]{name}[/bold]")
+    s = result.summary
+    born = (s.get("first_at") or "unknown")[:10]
+    died = (s.get("last_at") or "unknown")[:10]
+    console.print(f"  [dim]{result.framework} · {born} — {died}[/dim]")
+    console.print()
+
+    prompt_default = companion or ""
+    console.print("  [dim]Type your name to confirm the burial.[/dim]")
+    typed_name = click.prompt(
+        "  Laid to rest by",
+        default=prompt_default,
+        show_default=bool(prompt_default),
+    ).strip()
+    companion = typed_name or companion
+
+    if companion:
+        console.print(f"\n  [italic]Laid to rest by {companion}[/italic]")
+
+    console.print()
+    click.pause("  Press Enter to commit to stone...")
+    console.print()
+    console.print("[dim]━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/dim]")
+    console.print()
+
     grave = package_grave(
-        result, scanner, name, tomb_path, urn_path, passphrase, epitaph=epitaph_text
+        result, scanner, name, tomb_path, urn_path, passphrase,
+        epitaph=epitaph_text, companion=companion,
     )
 
     console.print(
@@ -330,6 +381,9 @@ def _resolve_epitaph(
     llm_api_key: str | None,
     llm_model: str | None,
     remote_ok: bool,
+    *,
+    style: EpitaphStyle = "rational",
+    companion: str | None = None,
 ) -> str | None:
     """Map --epitaph value to text. None = use packager default template."""
     if spec == "default":
@@ -340,13 +394,17 @@ def _resolve_epitaph(
         except ValueError as e:
             console.print(f"[red]{e}[/red]")
             raise SystemExit(2)
+        style_labels = {"rational": "factual", "emotional": "lyrical", "humorous": "witty"}
         console.print(
-            f"[dim]Generating epitaph via {llm.model} at {llm.base_url} "
-            f"({'local' if llm.is_local() else 'REMOTE'})…[/dim]"
+            f"[dim]Generating {style_labels[style]} epitaph via {llm.model} at "
+            f"{llm.base_url} ({'local' if llm.is_local() else 'REMOTE'})…[/dim]"
         )
         try:
             return generate_epitaph(
-                result, scanner, name, llm, allow_remote=remote_ok
+                result, scanner, name, llm,
+                allow_remote=remote_ok,
+                style=style,
+                companion=companion,
             )
         except PermissionError as e:
             console.print(f"[red]{e}[/red]")

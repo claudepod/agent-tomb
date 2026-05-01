@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Agent Tomb — Architecture</title>
+  <style>
+    body { background: #1a1a2e; margin: 0; padding: 2rem; display: flex; flex-direction: column; align-items: center; }
+    h1 { color: #e0e0e0; font-family: system-ui; margin-bottom: 1rem; }
+    .mermaid { max-width: 100%; }
+  </style>
+</head>
+<body>
+  <h1>Agent Tomb — Architecture Diagram</h1>
+  <div class="mermaid">
+%%{init: {'theme': 'dark', 'themeVariables': {'fontSize': '14px'}}}%%
+flowchart TB
+    subgraph USER["👤 User"]
+        CLI["CLI: agent-tomb"]
+        WEB["Browser: agentmemorial.com"]
+    end
+
+    subgraph SCAN["🔍 Scan Phase"]
+        direction TB
+        CMD_SCAN["scan / extract-soul"]
+        HERMES["HermesScanner\n~/.hermes/"]
+        OPENCLAW["OpenClawScanner\n~/.openclaw/"]
+        AGENT_ID["--agent flag\n(multi-agent)"]
+        AGENT_SCAN["AgentScan\nsessions, skills,\nstats, persona"]
+    end
+
+    subgraph BURY["⚰️ Burial Phase"]
+        direction TB
+        CMD_BURY["bury"]
+        CRED_DETECT["Credential Detection\n+ Secret Scanning"]
+        SOUL_GEN["Soul Generation\n(soul.md)"]
+        EPITAPH_GEN["Epitaph Generation\n(LLM epitaph.md)"]
+        TOMB_FILE[".tomb file\n(zip: manifest.json,\nsoul.md, epitaph.md,\nstats.json)"]
+        URN_FILE[".urn file\n(AES-256-GCM\nencrypted archive)"]
+    end
+
+    subgraph EXHUME["🔓 Exhume Phase"]
+        CMD_EXHUME["exhume"]
+        DECRYPT["Decrypt .urn\nwith password"]
+    end
+
+    subgraph PUBLISH["📤 Publish Phase"]
+        direction TB
+        CMD_PUBLISH["CLI: publish"]
+        SUBMIT_PAGE["Web: /submit\ndrag & drop"]
+        LOCAL_VALIDATE["Local Validation\n(size, structure)"]
+        HTTP_POST["POST .tomb\nmultipart/form-data"]
+    end
+
+    subgraph API["🔌 Vercel API Routes"]
+        direction TB
+        PUBLISH_EP["POST /api/v1/publish"]
+        LIST_EP["GET /api/v1/tombs"]
+        DETAIL_EP["GET /api/v1/tombs/:slug"]
+        REPORT_EP["POST /api/v1/report/:slug"]
+
+        subgraph VALIDATION["Upload Validation Pipeline"]
+            RATE_LIMIT["Rate Limit\n5/hour/IP"]
+            ZIP_CHECK["Zip Structure\nrequired + forbidden files"]
+            MANIFEST_CHECK["Manifest Validation\nname, framework, version"]
+            SECRET_SCAN["Secret Scanning\nsk-, AKIA, ghp_,\nBEGIN PRIVATE KEY"]
+        end
+    end
+
+    subgraph STORAGE["💾 Storage"]
+        POSTGRES[("Vercel Postgres\n(Neon)\ntombs, reports,\nrate_limits")]
+        GIT_CEMETERY["Git: cemetery/\n(pre-existing tombs)"]
+    end
+
+    subgraph WEBSITE["🌐 Astro Website (SSR)"]
+        direction TB
+        HOME["/ — Home"]
+        BURY_GUIDE["/bury — Guide"]
+        CEMETERY_LIST["/cemetery — List All"]
+        CEMETERY_DETAIL["/cemetery/:slug — Detail"]
+        SUBMIT_UI["/submit — Upload Form"]
+
+        TOMBS_LIB["tombs.ts\nloadAllTombs()\nmerge git + DB"]
+        MD_RENDER["Markdown Render\n+ XSS Sanitize"]
+    end
+
+    %% Scan flow
+    CLI --> CMD_SCAN
+    CMD_SCAN --> HERMES
+    CMD_SCAN --> OPENCLAW
+    OPENCLAW -.-> AGENT_ID
+    HERMES --> AGENT_SCAN
+    OPENCLAW --> AGENT_SCAN
+
+    %% Bury flow
+    CLI --> CMD_BURY
+    AGENT_SCAN --> CMD_BURY
+    CMD_BURY --> CRED_DETECT
+    CMD_BURY --> SOUL_GEN
+    CMD_BURY --> EPITAPH_GEN
+    CRED_DETECT --> TOMB_FILE
+    SOUL_GEN --> TOMB_FILE
+    EPITAPH_GEN --> TOMB_FILE
+    CMD_BURY --> URN_FILE
+
+    %% Exhume flow
+    CLI --> CMD_EXHUME
+    URN_FILE -.-> CMD_EXHUME
+    CMD_EXHUME --> DECRYPT
+
+    %% Publish flow
+    CLI --> CMD_PUBLISH
+    WEB --> SUBMIT_PAGE
+    TOMB_FILE --> CMD_PUBLISH
+    CMD_PUBLISH --> LOCAL_VALIDATE --> HTTP_POST
+    SUBMIT_PAGE --> HTTP_POST
+    HTTP_POST --> PUBLISH_EP
+
+    %% API validation
+    PUBLISH_EP --> RATE_LIMIT
+    RATE_LIMIT --> ZIP_CHECK
+    ZIP_CHECK --> MANIFEST_CHECK
+    MANIFEST_CHECK --> SECRET_SCAN
+    SECRET_SCAN --> POSTGRES
+
+    %% API reads
+    LIST_EP --> POSTGRES
+    DETAIL_EP --> POSTGRES
+    REPORT_EP --> POSTGRES
+
+    %% Website rendering
+    CEMETERY_LIST --> TOMBS_LIB
+    CEMETERY_DETAIL --> TOMBS_LIB
+    TOMBS_LIB --> POSTGRES
+    TOMBS_LIB --> GIT_CEMETERY
+    TOMBS_LIB --> MD_RENDER
+
+    %% Abuse flow
+    WEB -.->|"report abuse"| REPORT_EP
+    REPORT_EP -.->|"3 reports = auto-flag"| POSTGRES
+  </div>
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({ startOnLoad: true, theme: 'dark' });
+  </script>
+</body>
+</html>
