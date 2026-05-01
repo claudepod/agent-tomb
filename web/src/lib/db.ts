@@ -36,9 +36,19 @@ export async function ensureSchema(): Promise<void> {
       manifest_json       TEXT NOT NULL,
       soul_md             TEXT NOT NULL,
       epitaph_md          TEXT NOT NULL,
-      stats_json          TEXT NOT NULL
+      stats_json          TEXT NOT NULL,
+      soul_protected      BOOLEAN NOT NULL DEFAULT FALSE,
+      soul_enc            TEXT
     )
   `;
+
+  // Add columns to existing tables (idempotent)
+  await sql`
+    ALTER TABLE tombs ADD COLUMN IF NOT EXISTS soul_protected BOOLEAN NOT NULL DEFAULT FALSE
+  `.catch(() => {});
+  await sql`
+    ALTER TABLE tombs ADD COLUMN IF NOT EXISTS soul_enc TEXT
+  `.catch(() => {});
 
   await sql`
     CREATE TABLE IF NOT EXISTS reports (
@@ -118,6 +128,8 @@ export interface TombRow {
   soul_md: string;
   epitaph_md: string;
   stats_json: string;
+  soul_protected: boolean;
+  soul_enc: string | null;
 }
 
 export async function listTombs(
@@ -173,20 +185,24 @@ export async function insertTomb(tomb: {
   soul_md: string;
   epitaph_md: string;
   stats_json: string;
+  soul_protected: boolean;
+  soul_enc: string | null;
 }): Promise<void> {
   await sql`
     INSERT INTO tombs (
       slug, name, framework, created_at, agent_tomb_version,
       soul_sha256, session_count, message_count, lifespan_days,
       estimated_cost_usd, first_at, last_at, models, platforms,
-      submitter_ip_hash, manifest_json, soul_md, epitaph_md, stats_json
+      submitter_ip_hash, manifest_json, soul_md, epitaph_md, stats_json,
+      soul_protected, soul_enc
     ) VALUES (
       ${tomb.slug}, ${tomb.name}, ${tomb.framework}, ${tomb.created_at},
       ${tomb.agent_tomb_version}, ${tomb.soul_sha256},
       ${tomb.session_count}, ${tomb.message_count}, ${tomb.lifespan_days},
       ${tomb.estimated_cost_usd}, ${tomb.first_at}, ${tomb.last_at},
       ${tomb.models}, ${tomb.platforms}, ${tomb.submitter_ip_hash},
-      ${tomb.manifest_json}, ${tomb.soul_md}, ${tomb.epitaph_md}, ${tomb.stats_json}
+      ${tomb.manifest_json}, ${tomb.soul_md}, ${tomb.epitaph_md}, ${tomb.stats_json},
+      ${tomb.soul_protected}, ${tomb.soul_enc}
     )
   `;
 }

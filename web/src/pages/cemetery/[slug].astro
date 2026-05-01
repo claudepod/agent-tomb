@@ -122,7 +122,102 @@ const s = tomb.stats.summary;
       </section>
     )}
 
-    {tomb.soulHtml && (
+    {tomb.soulProtected ? (
+      <div class="mb-12" id="soul-section">
+        <h2 class="text-2xl text-[var(--color-ink)] mb-4 flex items-center gap-3">
+          <span class="font-[var(--font-display)]">The full soul</span>
+          <span class="font-[var(--font-mono)] text-xs text-[var(--color-ink-faint)] uppercase tracking-wider">
+            sealed
+          </span>
+        </h2>
+        <p class="text-[var(--color-ink-soft)] italic mb-5">
+          This soul is sealed. Enter the viewing password to read it.
+        </p>
+        <div class="flex gap-3 items-center" id="soul-unlock">
+          <input
+            type="password"
+            id="soul-password"
+            placeholder="Viewing password"
+            class="px-4 py-2 rounded-lg bg-[var(--color-bg-soft)] border border-[var(--color-stone-line)]/40 text-[var(--color-ink)] font-[var(--font-mono)] text-sm focus:outline-none focus:border-[var(--color-bronze)]"
+          />
+          <button
+            id="soul-unlock-btn"
+            class="px-4 py-2 rounded-lg bg-[var(--color-bg-card)] border border-[var(--color-stone-line)]/40 text-[var(--color-ink-soft)] font-[var(--font-mono)] text-sm hover:border-[var(--color-bronze)] hover:text-[var(--color-ink)] transition-colors cursor-pointer"
+          >
+            Unseal
+          </button>
+        </div>
+        <p id="soul-error" class="text-red-400 text-sm mt-2 hidden"></p>
+        <div id="soul-content" class="prose-memorial mt-6 hidden"></div>
+      </div>
+      <script define:vars={{ soulEncData: tomb.soulEnc }}>
+        (function() {
+          const encData = JSON.parse(soulEncData);
+          const btn = document.getElementById('soul-unlock-btn');
+          const input = document.getElementById('soul-password');
+          const errEl = document.getElementById('soul-error');
+          const contentEl = document.getElementById('soul-content');
+          const unlockEl = document.getElementById('soul-unlock');
+
+          async function decrypt() {
+            const password = input.value;
+            if (!password) { errEl.textContent = 'Please enter a password.'; errEl.classList.remove('hidden'); return; }
+            errEl.classList.add('hidden');
+            btn.textContent = 'Decrypting...';
+            btn.disabled = true;
+
+            try {
+              const salt = Uint8Array.from(atob(encData.salt), c => c.charCodeAt(0));
+              const iv = Uint8Array.from(atob(encData.iv), c => c.charCodeAt(0));
+              const ct = Uint8Array.from(atob(encData.ciphertext), c => c.charCodeAt(0));
+              const iterations = encData.iterations || 100000;
+
+              const keyMaterial = await crypto.subtle.importKey(
+                'raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveKey']
+              );
+              const key = await crypto.subtle.deriveKey(
+                { name: 'PBKDF2', salt, iterations, hash: 'SHA-256' },
+                keyMaterial,
+                { name: 'AES-GCM', length: 256 },
+                false,
+                ['decrypt']
+              );
+              const plainBuf = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ct);
+              const plaintext = new TextDecoder().decode(plainBuf);
+
+              // Render markdown client-side (simple: just set as pre-formatted or innerHTML)
+              // We use a simple markdown-to-html approach for safety
+              const html = plaintext
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+                .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+                .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.+?)\*/g, '<em>$1</em>')
+                .replace(/`([^`]+)`/g, '<code>$1</code>')
+                .replace(/^- (.+)$/gm, '<li>$1</li>')
+                .replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>')
+                .replace(/^(?!<[hulo])(.*\S.*)$/gm, '<p>$1</p>')
+                .replace(/\n{2,}/g, '');
+
+              contentEl.innerHTML = html;
+              contentEl.classList.remove('hidden');
+              unlockEl.classList.add('hidden');
+              document.querySelector('#soul-section p.italic').textContent = 'Soul unsealed.';
+              document.querySelector('#soul-section .uppercase').textContent = 'unsealed';
+            } catch (e) {
+              errEl.textContent = 'Wrong password or corrupted data.';
+              errEl.classList.remove('hidden');
+              btn.textContent = 'Unseal';
+              btn.disabled = false;
+            }
+          }
+
+          btn.addEventListener('click', decrypt);
+          input.addEventListener('keydown', (e) => { if (e.key === 'Enter') decrypt(); });
+        })();
+      </script>
+    ) : tomb.soulHtml ? (
       <details class="group mb-12">
         <summary
           class="cursor-pointer text-2xl text-[var(--color-ink)] mb-4 list-none flex items-center gap-3"
@@ -141,7 +236,7 @@ const s = tomb.stats.summary;
         </summary>
         <div class="prose-memorial mt-4" set:html={tomb.soulHtml} />
       </details>
-    )}
+    ) : null}
 
     {tomb.tombFileExists && (
       <div class="text-center pt-6 border-t border-[var(--color-stone-line)]/40">

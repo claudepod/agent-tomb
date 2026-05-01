@@ -43,6 +43,8 @@ export interface Tomb {
   soulText: string;
   stats: Stats;
   tombFileExists: boolean;
+  soulProtected: boolean;
+  soulEnc: string | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -96,15 +98,19 @@ export function loadTombs(): Tomb[] {
       const stats = JSON.parse(
         fs.readFileSync(path.join(dir, "stats.json"), "utf-8"),
       ) as Stats;
+      const soulEncPath = path.join(dir, "soul.enc");
+      const hasSoulEnc = fs.existsSync(soulEncPath);
       tombs.push({
         slug,
         manifest,
         epitaphText,
         epitaphHtml: renderMarkdown(epitaphText),
-        soulText,
-        soulHtml: renderMarkdown(soulText),
+        soulText: hasSoulEnc ? "" : soulText,
+        soulHtml: hasSoulEnc ? "" : renderMarkdown(soulText),
         stats,
         tombFileExists: fs.existsSync(path.join(CEMETERY_DIR, `${slug}.tomb`)),
+        soulProtected: hasSoulEnc,
+        soulEnc: hasSoulEnc ? fs.readFileSync(soulEncPath, "utf-8") : null,
       });
     }
     return tombs.sort((a, b) =>
@@ -164,10 +170,12 @@ function dbRowToTomb(row: any): Tomb {
     },
     epitaphHtml: renderMarkdown(epitaphText),
     epitaphText,
-    soulHtml: renderMarkdown(soulText),
-    soulText,
+    soulHtml: row.soul_protected ? "" : renderMarkdown(soulText),
+    soulText: row.soul_protected ? "" : soulText,
     stats,
     tombFileExists: false,
+    soulProtected: row.soul_protected ?? false,
+    soulEnc: row.soul_enc ?? null,
   };
 }
 

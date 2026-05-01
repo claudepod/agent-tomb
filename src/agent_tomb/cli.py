@@ -297,6 +297,21 @@ def bury(
         console.print(f"\n  [italic]Laid to rest by {companion}[/italic]")
 
     console.print()
+    console.print("  [dim]The soul contains the agent's full identity and history.[/dim]")
+    console.print("  [dim]Set a password so only those who knew it can read it.[/dim]")
+    soul_password = click.prompt(
+        "  Soul viewing password (empty = public)",
+        default="",
+        hide_input=True,
+        show_default=False,
+    ).strip() or None
+
+    if soul_password:
+        console.print("  [green]Soul will be sealed.[/green]")
+    else:
+        console.print("  [dim]Soul will remain public.[/dim]")
+
+    console.print()
     click.pause("  Press Enter to commit to stone...")
     console.print()
     console.print("[dim]━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/dim]")
@@ -305,6 +320,7 @@ def bury(
     grave = package_grave(
         result, scanner, name, tomb_path, urn_path, passphrase,
         epitaph=epitaph_text, companion=companion,
+        soul_password=soul_password,
     )
 
     console.print(

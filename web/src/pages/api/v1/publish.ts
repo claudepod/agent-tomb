@@ -113,6 +113,8 @@ export const POST: APIRoute = async ({ request }) => {
       soul_md: tomb.files["soul.md"],
       epitaph_md: tomb.files["epitaph.md"],
       stats_json: tomb.files["stats.json"],
+      soul_protected: tomb.manifest.soul_protected ?? false,
+      soul_enc: tomb.files["soul.enc"] ?? null,
     });
 
     const url = `https://www.agentmemorial.com/cemetery/${slug}/`;

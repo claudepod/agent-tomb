@@ -28,6 +28,7 @@ export interface ValidatedTomb {
     created_at: string;
     agent_tomb_version: string;
     soul_sha256?: string;
+    soul_protected?: boolean;
   };
   stats: any;
   files: {
@@ -35,6 +36,7 @@ export interface ValidatedTomb {
     "soul.md": string;
     "epitaph.md": string;
     "stats.json": string;
+    "soul.enc"?: string;
   };
 }
 
@@ -88,8 +90,22 @@ export function validateTomb(
     errors.push(`manifest.kind="${manifest.kind}" — only "tomb" allowed`);
   }
 
-  // Secret scan
+  // Validate soul.enc if present
+  const soulEncRaw = entries.get("soul.enc");
+  if (soulEncRaw) {
+    try {
+      const enc = JSON.parse(soulEncRaw);
+      if (!enc.salt || !enc.iv || !enc.ciphertext) {
+        errors.push("soul.enc missing required fields (salt, iv, ciphertext)");
+      }
+    } catch {
+      errors.push("soul.enc is not valid JSON");
+    }
+  }
+
+  // Secret scan (skip soul.enc — it's encrypted ciphertext)
   for (const [filename, content] of entries) {
+    if (filename === "soul.enc") continue;
     for (const pattern of SECRET_PATTERNS) {
       if (pattern.test(content)) {
         errors.push(`Possible secret in ${filename}`);
@@ -121,6 +137,7 @@ export function validateTomb(
         "soul.md": entries.get("soul.md")!,
         "epitaph.md": entries.get("epitaph.md")!,
         "stats.json": entries.get("stats.json")!,
+        ...(soulEncRaw ? { "soul.enc": soulEncRaw } : {}),
       },
     },
   };

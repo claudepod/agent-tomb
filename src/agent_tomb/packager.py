@@ -10,17 +10,25 @@ catch).
 """
 from __future__ import annotations
 
+import base64
 import hashlib
 import json
+import os
 import zipfile
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+from cryptography.hazmat.primitives import hashes
+
 from agent_tomb import __version__
 from agent_tomb.burial import build_burial
 from agent_tomb.extractors import render_soul
 from agent_tomb.scanners.base import AgentScan, Scanner
+
+SOUL_PBKDF2_ITERATIONS = 100_000
 
 DEFAULT_EPITAPH = """# {name}
 
@@ -65,6 +73,7 @@ def package_grave(
     passphrase: str,
     epitaph: str | None = None,
     companion: str | None = None,
+    soul_password: str | None = None,
 ) -> GraveResult:
     """Produce both the public .tomb stone and the private .urn remains."""
     soul_md = render_soul(scan, name)
@@ -75,6 +84,7 @@ def package_grave(
     ciphertext, meta = build_burial(files, passphrase)
 
     soul_sha = hashlib.sha256(soul_md.encode("utf-8")).hexdigest()
+    soul_protected = bool(soul_password)
 
     tomb_manifest = {
         "name": name,
@@ -83,13 +93,19 @@ def package_grave(
         "created_at": created_at,
         "agent_tomb_version": __version__,
         "soul_sha256": soul_sha,
+        "soul_protected": soul_protected,
     }
     stats = {"summary": scan.summary, "skills": scan.skills, "notes": scan.notes}
 
     tomb_path.parent.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(tomb_path, "w", zipfile.ZIP_DEFLATED) as z:
         z.writestr("manifest.json", json.dumps(tomb_manifest, indent=2))
-        z.writestr("soul.md", soul_md)
+        if soul_password:
+            soul_enc = encrypt_soul(soul_md, soul_password)
+            z.writestr("soul.md", "_This soul is sealed. Enter the viewing password to read it._")
+            z.writestr("soul.enc", json.dumps(soul_enc))
+        else:
+            z.writestr("soul.md", soul_md)
         z.writestr("epitaph.md", epitaph_md)
         z.writestr("stats.json", json.dumps(stats, indent=2, default=str))
 
@@ -166,3 +182,36 @@ def _fmt_lifespan(days: float | int | None) -> str:
     if d == 1:
         return "1 day"
     return f"{d} days"
+
+
+# ---------------------------------------------------------------------------
+# Soul encryption (AES-256-GCM + PBKDF2, Web Crypto API compatible)
+# ---------------------------------------------------------------------------
+
+def encrypt_soul(plaintext: str, password: str) -> dict:
+    """Encrypt soul markdown with a password.
+
+    Returns a dict with salt, iv, ciphertext (all base64) that can be
+    decrypted client-side using the Web Crypto API (PBKDF2 + AES-GCM).
+    """
+    salt = os.urandom(16)
+    iv = os.urandom(12)
+    key = _derive_key(password, salt)
+    aesgcm = AESGCM(key)
+    ct = aesgcm.encrypt(iv, plaintext.encode("utf-8"), None)
+    return {
+        "salt": base64.b64encode(salt).decode(),
+        "iv": base64.b64encode(iv).decode(),
+        "ciphertext": base64.b64encode(ct).decode(),
+        "iterations": SOUL_PBKDF2_ITERATIONS,
+    }
+
+
+def _derive_key(password: str, salt: bytes) -> bytes:
+    kdf = PBKDF2HMAC(
+        algorithm=hashes.SHA256(),
+        length=32,
+        salt=salt,
+        iterations=SOUL_PBKDF2_ITERATIONS,
+    )
+    return kdf.derive(password.encode("utf-8"))
