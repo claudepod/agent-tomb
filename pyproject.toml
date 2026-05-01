@@ -1,6 +1,6 @@
 [project]
 name = "agent-tomb"
-version = "0.3.1"
+version = "0.3.2"
 description = "A graveyard for retired AI agents — scan, package, and inherit from agents that have reached end-of-life."
 readme = "README.md"
 requires-python = ">=3.9"
